@@ -126,16 +126,16 @@ External eslint build-in rule (explicit-member-accessibility), allow custom acce
 	- Advanced usage has the following options:
 
 		```ts
-		type AdvancedOverrides = 
-			| {
-          accessibility: 'explicit';
-          fixWith: AccessibilityFixWith;
-          ignoredNames?: string[];
-        }
-			| {
-          accessibility: 'no-public';
-          ignoredNames?: string[];
-        }
+		{
+			accessibility: 'explicit';
+			fixWith: AccessibilityFixWith;
+			ignoredNames?: string[];
+		}
+		// or
+		{
+			accessibility: 'no-public';
+			ignoredNames?: string[];
+		}
 		```
 
 ---

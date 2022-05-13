@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "types": "dist/@types/index.d.ts",
   "files": ["/dist/*", "/package.json", "/README.md"],
-  "keywords": ["jshow", "jShow"],
+  "keywords": ["eslint", "eslint-plugin", "jshow", "eslint-plugin-jshow"],
   "license": "MIT",
   "homepage": "https://github.com/j-show/eslint-plugin-jshow",
   "repository": {
