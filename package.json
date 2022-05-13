@@ -1,0 +1,49 @@
+{
+  "name": "eslint-plugin-jshow",
+  "version": "1.0.1",
+  "main": "dist/index.js",
+  "types": "dist/@types/index.d.ts",
+  "files": ["/dist/*", "/package.json", "/README.md"],
+  "keywords": ["jshow", "jShow"],
+  "license": "MIT",
+  "homepage": "https://github.com/j-show/eslint-plugin-jshow",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/j-show/eslint-plugin-jshow.git"
+  },
+  "bugs": {
+    "url": "https://github.com/j-show/eslint-plugin-jshow/issues"
+  },
+  "scripts": {
+    "prepublishOnly": "yarn clean && yarn build",
+    "build": "tsc",
+    "clear": "rm -rf ./dist",
+    "check": "tsc --noEmit",
+    "lint": "eslint . --quiet",
+    "lint:fix": "eslint . --quiet --fix"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.33",
+    "@types/prettier": "^2.6.1",
+    "@typescript-eslint/eslint-plugin": "^5.23.0",
+    "@typescript-eslint/parser": "^5.23.0",
+    "eslint": "^8.15.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-eslint-plugin": "^4.1.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "eslint-plugin-simple-import-sort": "^7.0.0",
+    "eslint-plugin-unused-imports": "^2.0.0",
+    "husky": "^8.0.1",
+    "lint-staged": "^12.4.1",
+    "mocha": "^10.0.0",
+    "prettier": "^2.6.2",
+    "typescript": "^4.6.4"
+  }
+}

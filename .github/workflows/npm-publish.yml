@@ -1,0 +1,39 @@
+# This is a auto publish to npm workflow
+
+name: Auto publish to npm
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v2
+        with:
+          node-version: 12
+          registry-url: https://registry.npmjs.org/
+
+      - name: Get release tag
+        id: github-ref
+        run: echo "::set-output name=tag::$(echo $GREF | awk -F/ '{print $3}')"
+        env:
+          GREF: ${{ github.ref }}
+
+      - name: Change package version
+        run: yarn version --no-git-tag-version --new-version $TARGET_VERSION
+        env:
+          TARGET_VERSION: ${{ steps.github-ref.outputs.tag }}
+
+      - name: Install Dependencies
+        run: npm i
+
+      - name: Publish
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
