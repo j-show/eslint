@@ -9,7 +9,7 @@ type AccessibilityLevel =
   | 'explicit' // require an accessor (including public)
   | 'no-public'; // don't require public
 
-type AccessibilityFixWith = 'public' | 'protected' | 'private';
+export type AccessibilityFixWith = 'public' | 'protected' | 'private';
 
 type AccessibilityLevelAndFixer =
   | 'off'
@@ -32,7 +32,7 @@ interface OptionOverrides {
 }
 
 export interface ExplicitMemberAccessibilityOption {
-  accessibility: 'off' | AccessibilityLevel;
+  accessibility?: 'off' | AccessibilityLevel;
   fixWith?: AccessibilityFixWith;
   ignoredNames?: string[];
   staticAccessibility?: StaticAccessibilityLevel;
@@ -232,11 +232,11 @@ const create: ESLintUtils.RuleCreateAndOptions<
   [ExplicitMemberAccessibilityOption],
   ExplicitMemberAccessibilityMessageIds,
   TSESLint.RuleListener
->['create'] = (context) => {
+>['create'] = (context, defaultOptions) => {
   const options = context.options || [];
-  const option = options[0] || {};
+  const option = options[0] || defaultOptions[0] || {};
 
-  const fixWith = option.fixWith;
+  const fixWith = option.fixWith ?? 'protected';
   const baseOption = {
     accessibility: option.accessibility || 'explicit',
     ignoredNames: [...new Set(option.ignoredNames || []).values()],
@@ -247,16 +247,12 @@ const create: ESLintUtils.RuleCreateAndOptions<
     staticAccessibility: (option.staticAccessibility || 'no-accessibility') as StaticAccessibilityLevel,
     constructors: parseOverrideAccessibility(
       overrides?.constructors,
-      { accessibility: 'no-public', ignoredNames: [] },
-      fixWith ?? 'public',
+      baseOption.accessibility === 'explicit' ? { accessibility: 'no-public', ignoredNames: [] } : baseOption,
+      option.fixWith ?? 'public',
     ),
-    parameterProperties: parseOverrideAccessibility(
-      overrides.parameterProperties,
-      { accessibility: 'explicit', ignoredNames: [] },
-      fixWith ?? 'public',
-    ),
-    properties: parseOverrideAccessibility(overrides.properties, { accessibility: 'off', ignoredNames: [] }, fixWith),
-    accessors: parseOverrideAccessibility(overrides.accessors, baseOption, fixWith ?? 'public'),
+    parameterProperties: parseOverrideAccessibility(overrides.parameterProperties, baseOption, fixWith),
+    properties: parseOverrideAccessibility(overrides.properties, baseOption, fixWith),
+    accessors: parseOverrideAccessibility(overrides.accessors, baseOption, fixWith),
     methods: parseOverrideAccessibility(overrides.methods, baseOption, fixWith),
   };
 
@@ -306,7 +302,7 @@ function checkMethodAccessibilityModifier(
       if (option.constructors === 'off') break;
       accessibility = option.constructors.accessibility;
       ignoredNames = option.constructors.ignoredNames || [];
-      fixWith = 'public';
+      if (option.constructors.accessibility === 'explicit') fixWith = option.constructors.fixWith;
       break;
     case 'get':
     case 'set':
@@ -314,14 +310,14 @@ function checkMethodAccessibilityModifier(
       if (option.accessors === 'off') break;
       accessibility = option.accessors.accessibility;
       ignoredNames = option.accessors.ignoredNames || [];
-      fixWith = 'public';
+      if (option.accessors.accessibility === 'explicit') fixWith = option.accessors.fixWith;
       break;
     case 'method':
     default:
       if (option.methods === 'off') break;
       accessibility = option.methods.accessibility;
       ignoredNames = option.methods.ignoredNames || [];
-      fixWith = 'public';
+      if (option.methods.accessibility === 'explicit') fixWith = option.methods.fixWith;
       break;
   }
 
@@ -453,11 +449,6 @@ export const rule = ESLintUtils.RuleCreator((ruleName) => `https://typescript-es
       fixWith: 'protected',
       overrides: {
         constructors: 'no-public',
-        parameterProperties: {
-          accessibility: 'explicit',
-          fixWith: 'public',
-        },
-        properties: 'off',
       },
     },
   ],

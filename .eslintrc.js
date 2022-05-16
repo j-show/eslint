@@ -24,7 +24,7 @@ module.exports = {
     sourceType: 'module',
   },
   rules: {
-    'no-restricted-globals': ['error', ...NodeGlobals],
+    'no-restricted-globals': ['error', [...NodeGlobals]],
     'no-case-declarations': 'off',
     'no-prototype-builtins': 'warn',
     'no-empty': ['error', { allowEmptyCatch: true }],
@@ -102,7 +102,7 @@ module.exports = {
   },
   overrides: [
     {
-      files: ['tests/**/*.js'],
+      files: ['test/**/*.js'],
       env: { mocha: true },
     },
   ],

@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": ["esnext"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "strict": true,
+    "exactOptionalPropertyTypes": true
+  },
+  "include": ["file.ts"]
+}

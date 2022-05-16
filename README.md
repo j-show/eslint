@@ -61,12 +61,7 @@ External eslint build-in rule (explicit-member-accessibility), allow custom acce
 				"staticAccessibility": "no-accessibility",
 				"fixWith": "protected",
 				"overrides": {
-					"constructors": "no-public",
-					"properties": "off",
-					"parameterProperties": {
-						"accessibility": "explicit",
-						"fixWith": "public",
-					},
+					"constructors": "no-public"
 				}
 			}
 		]
