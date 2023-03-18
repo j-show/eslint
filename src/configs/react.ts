@@ -23,6 +23,13 @@ export const react: TSESLint.Linter.Config = {
     {
       files: ['*.jsx', '*.tsx'],
       rules: {
+        'simple-import-sort/imports': [
+          'error',
+          {
+            groups: [['\\u0000'], ['react', '^@?[a-zA-Z]'], ['^@/'], ['^\\.\\./'], ['^\\./']],
+          },
+        ],
+
         'react/display-name': 'off',
         'react/prop-types': 'off',
         'react/jsx-key': 'error',

@@ -1,22 +1,33 @@
 import { TSESLint } from '@typescript-eslint/utils';
 
 export const typescript: TSESLint.Linter.Config = {
-  extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended', 'prettier', 'plugin:prettier/recommended'],
-  plugins: ['@typescript-eslint', 'prettier'],
-  env: {
-    es2020: true,
-    node: true,
-  },
+  extends: [
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:import/errors',
+    'plugin:import/warnings',
+    'plugin:import/typescript',
+
+    // Exclude prettier-specific rules. Must be last configuration in the extends array
+    'prettier',
+    'plugin:prettier/recommended',
+  ],
+  plugins: ['prettier', 'unused-imports', 'simple-import-sort'],
+
   parser: '@typescript-eslint/parser',
   parserOptions: {
     sourceType: 'module',
     ecmaVersion: 2020,
   },
+  env: {
+    es2020: true,
+    node: true,
+  },
   rules: {
     'no-restricted-globals': ['error', 'module', 'require'],
     'no-prototype-builtins': 'warn',
     'no-empty': ['error', { allowEmptyCatch: true }],
-    'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
+    'no-console': ['error', { allow: ['debug', 'warn', 'error', 'info'] }],
     'no-control-regex': 'off',
     'no-useless-escape': 'warn',
     'no-var': 'error',
@@ -25,6 +36,15 @@ export const typescript: TSESLint.Linter.Config = {
     'no-fallthrough': 'warn',
     'no-use-before-define': 'off',
     'no-duplicate-imports': 'error',
+
+    'no-restricted-syntax': [
+      'error',
+      {
+        selector: `MemberExpression[property.name="name"]:has(MemberExpressionp[property.name='constructor'])`,
+        message:
+          'Cannot use `xxx.constructor.name`, because the interpretation of the class name fails after causing confusion.',
+      },
+    ],
 
     'prefer-const': ['error', { ignoreReadBeforeAssign: true, destructuring: 'all' }],
     'default-param-last': ['error'],
@@ -122,6 +142,26 @@ export const typescript: TSESLint.Linter.Config = {
           match: false,
         },
       },
+    ],
+
+    'simple-import-sort/exports': 'error',
+    'simple-import-sort/imports': [
+      'error',
+      {
+        groups: [['\\u0000'], ['^@?[a-zA-Z]'], ['^@/'], ['^\\.\\./'], ['^\\./']],
+      },
+    ],
+
+    'import/first': 'error',
+    'import/newline-after-import': 'error',
+    'import/no-duplicates': 'error',
+    'import/no-unresolved': 'off',
+    'import/no-named-as-default': 'off',
+
+    'unused-imports/no-unused-imports': 'error',
+    'unused-imports/no-unused-vars': [
+      'error',
+      { vars: 'all', varsIgnorePattern: '^_', args: 'after-used', argsIgnorePattern: '^_' },
     ],
   },
   overrides: [

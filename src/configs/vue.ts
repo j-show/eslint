@@ -11,7 +11,15 @@ export const vue: TSESLint.Linter.Config = {
     {
       files: ['*.vue'],
       rules: {
-        // '@typescript-eslint/no-unused-vars': 'off',
+        '@typescript-eslint/no-unused-vars': 'off',
+
+        'simple-import-sort/imports': [
+          'error',
+          {
+            groups: [['\\u0000'], ['vue', '^@?[a-zA-Z]'], ['^@/'], ['^\\.\\./'], ['^\\./']],
+          },
+        ],
+
         'vue/v-on-event-hyphenation': 'off',
         'vue/multi-word-component-names': ['warn'],
         'vue/component-api-style': ['error', ['script-setup', 'composition']],
