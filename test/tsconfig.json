@@ -7,6 +7,5 @@
     "skipLibCheck": true,
     "strict": true,
     "exactOptionalPropertyTypes": true
-  },
-  "include": ["file.ts"]
+  }
 }

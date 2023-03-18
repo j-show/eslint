@@ -1,6 +1,9 @@
 import { requiresQuoting } from '@typescript-eslint/type-utils';
 import { AST_NODE_TYPES } from '@typescript-eslint/types';
 import { TSESLint, TSESTree } from '@typescript-eslint/utils';
+import { rules as TSESLintRules } from '@typescript-eslint/eslint-plugin';
+
+import { ReportIssueFunc } from './types';
 
 enum MemberNameType {
   Private = 1,
@@ -51,4 +54,32 @@ export const getNameFromMember = (
     type: MemberNameType.Expression,
     name: sourceCode.text.slice(...member.key.range),
   };
+};
+
+export const getContextReportIssue = <ID extends string, OPT extends readonly unknown[] = []>(
+  context: TSESLint.RuleContext<ID, OPT>,
+) => {
+  const reportIssue: ReportIssueFunc<ID> = (messageId, node, fix, descriptor) => {
+    context.report({
+      node,
+      messageId,
+      fix,
+      ...descriptor,
+    });
+  };
+
+  return reportIssue;
+};
+
+export const getRuleListener = <ID extends string, OPT extends readonly unknown[]>(
+  name: string,
+  context: TSESLint.RuleContext<ID, OPT>,
+) => {
+  try {
+    const ruleModule = TSESLintRules[name] as unknown as TSESLint.RuleModule<ID, OPT>;
+    return ruleModule?.create(context) ?? {};
+  } catch {
+    const ruleModule = new TSESLint.Linter().getRules().get(name) as unknown as TSESLint.RuleModule<ID, OPT>;
+    return ruleModule?.create(context) ?? {};
+  }
 };
