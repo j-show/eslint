@@ -4,6 +4,11 @@ export const vue: TSESLint.Linter.Config = {
   extends: ['plugin:vue/vue3-recommended'],
   plugins: ['vue'],
   parser: 'vue-eslint-parser',
+  parserOptions: {
+    parser: '@typescript-eslint/parser',
+    sourceType: 'module',
+    ecmaVersion: 2020,
+  },
   env: {
     browser: true,
   },

@@ -16,6 +16,7 @@ export const typescript: TSESLint.Linter.Config = {
 
   parser: '@typescript-eslint/parser',
   parserOptions: {
+    parser: '@typescript-eslint/parser',
     sourceType: 'module',
     ecmaVersion: 2020,
   },
