@@ -11,17 +11,18 @@ export const createRuleTester = () => {
       ecmaVersion: 2022,
       ecmaFeatures: { jsx: true },
       sourceType: 'module',
-      tsconfigRootDir: __dirname,
-    },
+      tsconfigRootDir: __dirname
+    }
   });
 
   const run = tester.run;
-  const to = (code: any) => (typeof code === 'string' ? { code, errors: [] } : { errors: [], ...code });
+  const to = (code: any) =>
+    typeof code === 'string' ? { code, errors: [] } : { errors: [], ...code };
 
   tester.run = (name, rule, { invalid = [], valid = [] }) =>
     run.call(tester, name, rule, {
       invalid: flattenDeep(invalid).filter(Boolean).map(to),
-      valid: flattenDeep(valid).filter(Boolean).map(to),
+      valid: flattenDeep(valid).filter(Boolean).map(to)
     });
 
   return tester;
@@ -36,7 +37,7 @@ export const testEntity =
   (text: string, option?: O, error?: M, output?: string): any => {
     const code = stripIndent(template.replace('{data}', text));
     const result: any = {
-      code,
+      code
     };
 
     if (option != null) {

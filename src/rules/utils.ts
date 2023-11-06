@@ -1,6 +1,6 @@
-import { requiresQuoting } from '@typescript-eslint/type-utils';
-import { AST_NODE_TYPES } from '@typescript-eslint/types';
-import { TSESLint, TSESTree } from '@typescript-eslint/utils';
+import { requiresQuoting } from '@typescript-eslint/type-utils/dist';
+import { AST_NODE_TYPES } from '@typescript-eslint/types/dist';
+import { TSESLint, TSESTree } from '@typescript-eslint/utils/dist';
 import { rules as TSESLintRules } from '@typescript-eslint/eslint-plugin';
 
 import { ReportIssueFunc } from './types';
@@ -9,7 +9,7 @@ enum MemberNameType {
   Private = 1,
   Quoted = 2,
   Normal = 3,
-  Expression = 4,
+  Expression = 4
 }
 
 export const getNameFromMember = (
@@ -21,18 +21,18 @@ export const getNameFromMember = (
     | TSESTree.TSAbstractPropertyDefinition
     | TSESTree.Property
     | TSESTree.TSPropertySignature,
-  sourceCode: TSESLint.SourceCode,
+  sourceCode: TSESLint.SourceCode
 ): { type: MemberNameType; name: string } => {
   if (member.key.type === AST_NODE_TYPES.Identifier) {
     return {
       type: MemberNameType.Normal,
-      name: member.key.name,
+      name: member.key.name
     };
   }
   if (member.key.type === AST_NODE_TYPES.PrivateIdentifier) {
     return {
       type: MemberNameType.Private,
-      name: `#${member.key.name}`,
+      name: `#${member.key.name}`
     };
   }
   if (member.key.type === AST_NODE_TYPES.Literal) {
@@ -40,46 +40,61 @@ export const getNameFromMember = (
     if (requiresQuoting(name)) {
       return {
         type: MemberNameType.Quoted,
-        name: `"${name}"`,
+        name: `"${name}"`
       };
     } else {
       return {
         type: MemberNameType.Normal,
-        name,
+        name
       };
     }
   }
 
   return {
     type: MemberNameType.Expression,
-    name: sourceCode.text.slice(...member.key.range),
+    name: sourceCode.text.slice(...member.key.range)
   };
 };
 
-export const getContextReportIssue = <ID extends string, OPT extends readonly unknown[] = []>(
-  context: TSESLint.RuleContext<ID, OPT>,
+export const getContextReportIssue = <
+  ID extends string,
+  OPT extends readonly unknown[] = []
+>(
+  context: TSESLint.RuleContext<ID, OPT>
 ) => {
-  const reportIssue: ReportIssueFunc<ID> = (messageId, node, fix, descriptor) => {
+  const reportIssue: ReportIssueFunc<ID> = (
+    messageId,
+    node,
+    fix,
+    descriptor
+  ) => {
     context.report({
       node,
       messageId,
       fix,
-      ...descriptor,
+      ...descriptor
     });
   };
 
   return reportIssue;
 };
 
-export const getRuleListener = <ID extends string, OPT extends readonly unknown[]>(
+export const getRuleListener = <
+  ID extends string,
+  OPT extends readonly unknown[]
+>(
   name: string,
-  context: TSESLint.RuleContext<ID, OPT>,
+  context: TSESLint.RuleContext<ID, OPT>
 ) => {
+  let ruleModule: TSESLint.RuleModule<ID, OPT>;
+
   try {
-    const ruleModule = TSESLintRules[name] as unknown as TSESLint.RuleModule<ID, OPT>;
-    return ruleModule?.create(context) ?? {};
+    ruleModule = TSESLintRules[name] as unknown as TSESLint.RuleModule<ID, OPT>;
   } catch {
-    const ruleModule = new TSESLint.Linter().getRules().get(name) as unknown as TSESLint.RuleModule<ID, OPT>;
-    return ruleModule?.create(context) ?? {};
+    ruleModule = new TSESLint.Linter()
+      .getRules()
+      .get(name) as unknown as TSESLint.RuleModule<ID, OPT>;
   }
+
+  return ruleModule?.create(context) ?? {};
 };

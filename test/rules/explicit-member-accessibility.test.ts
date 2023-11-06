@@ -1,8 +1,6 @@
-import {
-  name,
-  rule,
+import explicitMemberAccessibility, {
   ExplicitMemberAccessibilityMessageIds,
-  ExplicitMemberAccessibilityOption,
+  ExplicitMemberAccessibilityOption
 } from '../../src/rules/explicit-member-accessibility';
 import { testRun, testEntity as originTestEntity } from '../helper';
 
@@ -10,9 +8,10 @@ const template = `class TestCase {
   {data}
 }`;
 
-const testEntity = originTestEntity<ExplicitMemberAccessibilityMessageIds, ExplicitMemberAccessibilityOption>(
-  template,
-) as any;
+const testEntity = originTestEntity<
+  ExplicitMemberAccessibilityMessageIds,
+  ExplicitMemberAccessibilityOption
+>(template) as any;
 
 const AllAllowAccessibility = ['public', 'protected', 'private'];
 const NoPublicAllowAccessibility = ['protected', 'private'];
@@ -29,80 +28,108 @@ const memberCases = [...accessorCases, ...methodCases];
 
 const allCases = [...feildCases, ...memberCases];
 
-testRun(name, rule, {
+testRun(explicitMemberAccessibility.name, explicitMemberAccessibility.rule, {
   valid: [
     //#region default
 
     // static
-    allCases.map((v) => testEntity(`static ${v}`)),
+    allCases.map(v => testEntity(`static ${v}`)),
 
     // constructors
     testEntity('constructor(){}'),
-    NoPublicAllowAccessibility.map((k) => testEntity(`${k} constructor(){}`)),
+    NoPublicAllowAccessibility.map(k => testEntity(`${k} constructor(){}`)),
 
     // parameterProperties
     testEntity('constructor(a: string){}'),
-    AllAllowAccessibility.map((k) => testEntity(`constructor(${k} readonly a: string){}`)),
+    AllAllowAccessibility.map(k =>
+      testEntity(`constructor(${k} readonly a: string){}`)
+    ),
 
     // properties
-    AllAllowAccessibility.map((k) => feildCases.map((c) => testEntity(`${k} ${c}`))),
+    AllAllowAccessibility.map(k =>
+      feildCases.map(c => testEntity(`${k} ${c}`))
+    ),
 
     // methods
-    AllAllowAccessibility.map((k) => memberCases.map((c) => testEntity(`${k} ${c}`))),
+    AllAllowAccessibility.map(k =>
+      memberCases.map(c => testEntity(`${k} ${c}`))
+    ),
 
     //#endregion
 
     //#region static off
 
     // static
-    AllAllowAccessibility.map((k) =>
-      memberCases.map((c) => testEntity(`${k} static ${c}`, { staticAccessibility: 'off' })),
+    AllAllowAccessibility.map(k =>
+      memberCases.map(c =>
+        testEntity(`${k} static ${c}`, { staticAccessibility: 'off' })
+      )
     ),
 
     // constructors
     testEntity('constructor(){}', { staticAccessibility: 'off' }),
-    NoPublicAllowAccessibility.map((k) => testEntity(`${k} constructor(){}`, { staticAccessibility: 'off' })),
+    NoPublicAllowAccessibility.map(k =>
+      testEntity(`${k} constructor(){}`, { staticAccessibility: 'off' })
+    ),
 
     // parameterProperties
     testEntity('constructor(a: string){}', { staticAccessibility: 'off' }),
-    AllAllowAccessibility.map((k) => testEntity(`constructor(${k} readonly a: string){}`)),
+    AllAllowAccessibility.map(k =>
+      testEntity(`constructor(${k} readonly a: string){}`)
+    ),
 
     // properties
-    AllAllowAccessibility.map((k) => feildCases.map((c) => testEntity(`${k} ${c}`, { staticAccessibility: 'off' }))),
+    AllAllowAccessibility.map(k =>
+      feildCases.map(c =>
+        testEntity(`${k} ${c}`, { staticAccessibility: 'off' })
+      )
+    ),
 
     // methods
-    AllAllowAccessibility.map((k) => memberCases.map((c) => testEntity(`${k} ${c}`, { staticAccessibility: 'off' }))),
+    AllAllowAccessibility.map(k =>
+      memberCases.map(c =>
+        testEntity(`${k} ${c}`, { staticAccessibility: 'off' })
+      )
+    ),
 
     //#endregion
 
     //#region off
 
     // static
-    allCases.map((v) => testEntity(`static ${v}`, { accessibility: 'off' })),
+    allCases.map(v => testEntity(`static ${v}`, { accessibility: 'off' })),
 
     // constructors
     testEntity('constructor(){}', { accessibility: 'off' }),
-    AllAllowAccessibility.map((k) => testEntity(`${k} constructor(){}`, { accessibility: 'off' })),
+    AllAllowAccessibility.map(k =>
+      testEntity(`${k} constructor(){}`, { accessibility: 'off' })
+    ),
 
     // parameterProperties
     testEntity('constructor(a: string){}'),
-    AllAllowAccessibility.map((k) => testEntity(`constructor(${k} readonly a: string){}`, { accessibility: 'off' })),
+    AllAllowAccessibility.map(k =>
+      testEntity(`constructor(${k} readonly a: string){}`, {
+        accessibility: 'off'
+      })
+    ),
 
     // properties & accessor & method
-    allCases.map((c) => testEntity(`${c}`, { accessibility: 'off' })),
-    AllAllowAccessibility.map((k) => allCases.map((c) => testEntity(`${k} ${c}`, { accessibility: 'off' }))),
+    allCases.map(c => testEntity(`${c}`, { accessibility: 'off' })),
+    AllAllowAccessibility.map(k =>
+      allCases.map(c => testEntity(`${k} ${c}`, { accessibility: 'off' }))
+    ),
 
     //#endregion
 
     //#region fixWith public
 
     // static
-    allCases.map((v) =>
+    allCases.map(v =>
       testEntity(`static ${v}`, {
         accessibility: 'explicit',
         staticAccessibility: 'no-accessibility',
-        fixWith: 'public',
-      }),
+        fixWith: 'public'
+      })
     ),
 
     // parameterProperties
@@ -110,26 +137,26 @@ testRun(name, rule, {
     testEntity(`constructor(public readonly a: string){}`, {
       accessibility: 'explicit',
       staticAccessibility: 'no-accessibility',
-      fixWith: 'public',
+      fixWith: 'public'
     }),
 
     // properties
-    feildCases.map((c) =>
+    feildCases.map(c =>
       testEntity(`public ${c}`, {
         accessibility: 'explicit',
         staticAccessibility: 'no-accessibility',
-        fixWith: 'public',
-      }),
+        fixWith: 'public'
+      })
     ),
 
     // methods
-    memberCases.map((c) =>
+    memberCases.map(c =>
       testEntity(`public ${c}`, {
         accessibility: 'explicit',
         staticAccessibility: 'no-accessibility',
-        fixWith: 'public',
-      }),
-    ),
+        fixWith: 'public'
+      })
+    )
 
     //#endregion
   ],
@@ -137,51 +164,82 @@ testRun(name, rule, {
     //#region default
 
     // static
-    AllAllowAccessibility.map((k) =>
-      memberCases.map((c) => testEntity(`${k} static ${c}`, null, 'missingAccessibility', `static ${c}`)),
+    AllAllowAccessibility.map(k =>
+      memberCases.map(c =>
+        testEntity(
+          `${k} static ${c}`,
+          null,
+          'missingAccessibility',
+          `static ${c}`
+        )
+      )
     ),
 
     // constructors
-    testEntity('public constructor(){}', null, 'missingAccessibility', 'constructor(){}'),
+    testEntity(
+      'public constructor(){}',
+      null,
+      'missingAccessibility',
+      'constructor(){}'
+    ),
 
     // parameterProperties
     testEntity(
       'constructor(readonly a: string){}',
       null,
       'unwantedPublicAccessibility',
-      'constructor(protected readonly a: string){}',
+      'constructor(protected readonly a: string){}'
     ),
 
     // properties & accessor & method
-    allCases.map((c) => testEntity(c, null, 'unwantedPublicAccessibility', `protected ${c}`)),
+    allCases.map(c =>
+      testEntity(c, null, 'unwantedPublicAccessibility', `protected ${c}`)
+    ),
 
     //#endregion
 
     //#region static off
 
     // constructors
-    testEntity(`public constructor(){}`, { staticAccessibility: 'off' }, 'missingAccessibility', 'constructor(){}'),
+    testEntity(
+      `public constructor(){}`,
+      { staticAccessibility: 'off' },
+      'missingAccessibility',
+      'constructor(){}'
+    ),
 
     // parameterProperties
     testEntity(
       'constructor(readonly a: string){}',
       { staticAccessibility: 'off' },
       'unwantedPublicAccessibility',
-      'constructor(protected readonly a: string){}',
+      'constructor(protected readonly a: string){}'
     ),
 
     // properties & accessor & method
-    allCases.map((c) => testEntity(c, { staticAccessibility: 'off' }, 'unwantedPublicAccessibility', `protected ${c}`)),
+    allCases.map(c =>
+      testEntity(
+        c,
+        { staticAccessibility: 'off' },
+        'unwantedPublicAccessibility',
+        `protected ${c}`
+      )
+    ),
 
     //#endregion
 
     //#region off
 
     // static
-    AllAllowAccessibility.map((k) =>
-      memberCases.map((c) =>
-        testEntity(`${k} static ${c}`, { accessibility: 'off' }, 'missingAccessibility', `static ${c}`),
-      ),
+    AllAllowAccessibility.map(k =>
+      memberCases.map(c =>
+        testEntity(
+          `${k} static ${c}`,
+          { accessibility: 'off' },
+          'missingAccessibility',
+          `static ${c}`
+        )
+      )
     ),
 
     //#endregion
@@ -189,19 +247,19 @@ testRun(name, rule, {
     //#region fixWith public
 
     // static
-    AllAllowAccessibility.map((k) =>
-      memberCases.map((c) =>
+    AllAllowAccessibility.map(k =>
+      memberCases.map(c =>
         testEntity(
           `${k} static ${c}`,
           {
             accessibility: 'explicit',
             staticAccessibility: 'no-accessibility',
-            fixWith: 'public',
+            fixWith: 'public'
           },
           'missingAccessibility',
-          `static ${c}`,
-        ),
-      ),
+          `static ${c}`
+        )
+      )
     ),
 
     // constructors
@@ -211,10 +269,10 @@ testRun(name, rule, {
       {
         accessibility: 'explicit',
         staticAccessibility: 'no-accessibility',
-        fixWith: 'public',
+        fixWith: 'public'
       },
       'missingAccessibility',
-      'constructor(){}',
+      'constructor(){}'
     ),
 
     // parameterProperties
@@ -223,26 +281,26 @@ testRun(name, rule, {
       {
         accessibility: 'explicit',
         staticAccessibility: 'no-accessibility',
-        fixWith: 'public',
+        fixWith: 'public'
       },
       'unwantedPublicAccessibility',
-      'constructor(public readonly a: string){}',
+      'constructor(public readonly a: string){}'
     ),
 
     // properties & accessor & method
-    allCases.map((c) =>
+    allCases.map(c =>
       testEntity(
         c,
         {
           accessibility: 'explicit',
           staticAccessibility: 'no-accessibility',
-          fixWith: 'public',
+          fixWith: 'public'
         },
         'unwantedPublicAccessibility',
-        `public ${c}`,
-      ),
-    ),
+        `public ${c}`
+      )
+    )
 
     //#endregion
-  ],
+  ]
 });
