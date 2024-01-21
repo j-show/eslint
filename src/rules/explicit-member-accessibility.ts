@@ -1,9 +1,8 @@
 import { AST_NODE_TYPES, AST_TOKEN_TYPES } from '@typescript-eslint/types';
 import { ESLintUtils, TSESLint, TSESTree } from '@typescript-eslint/utils';
-import { ReportIssueData, ReportIssueFunc } from './types';
 
-import * as utils from './utils';
-import { getContextReportIssue } from './utils';
+import { ReportIssueData, ReportIssueFunc } from './types';
+import { getContextReportIssue, getNameFromMember } from './utils';
 
 type StaticAccessibilityLevel = 'off' | 'explicit' | 'no-accessibility';
 
@@ -41,7 +40,9 @@ export interface ExplicitMemberAccessibilityOption {
   overrides?: Partial<OptionOverrides>;
 }
 
-export type ExplicitMemberAccessibilityMessageIds = 'unwantedPublicAccessibility' | 'missingAccessibility';
+export type ExplicitMemberAccessibilityMessageIds =
+  | 'unwantedPublicAccessibility'
+  | 'missingAccessibility';
 
 type ReportIssue = ReportIssueFunc<ExplicitMemberAccessibilityMessageIds>;
 
@@ -55,7 +56,7 @@ const getAccessibilityFixer = (
     | TSESTree.TSParameterProperty,
   mode: 'add' | 'remove' | 'replace',
   char: string,
-  newChar: string = '',
+  newChar: string = ''
 ) => {
   return function (fixer: TSESLint.RuleFixer): TSESLint.RuleFix {
     const tokens = code.getTokens(node);
@@ -85,17 +86,18 @@ const getAccessibilityFixer = (
           // public /* Hi there! */ static foo()
           // ^^^^^^^
           changRange = [token.range[0], commensAfterPublicKeyword[0].range[0]];
-          break;
         } else {
           // public static foo()
           // ^^^^^^^
           changRange = [token.range[0], tokens[i + 1].range[0]];
-          break;
         }
+        break;
       }
     }
 
-    return mode === 'replace' ? fixer.replaceTextRange(changRange!, `${newChar} `) : fixer.removeRange(changRange!);
+    return mode === 'replace'
+      ? fixer.replaceTextRange(changRange!, `${newChar} `)
+      : fixer.removeRange(changRange!);
   };
 };
 
@@ -110,7 +112,7 @@ const checkStaticModifier = (
     | TSESTree.TSAbstractPropertyDefinition
     | TSESTree.TSParameterProperty,
   data: ReportIssueData,
-  noFix?: true,
+  noFix?: true
 ) => {
   if (!node.static) return true;
   if (accessibility === 'off') return;
@@ -122,14 +124,22 @@ const checkStaticModifier = (
           'unwantedPublicAccessibility',
           node,
           !noFix ? getAccessibilityFixer(code, node, 'add', 'public') : null,
-          { data },
+          { data }
         );
       } else if (node.accessibility !== 'public') {
         reportIssue(
           'missingAccessibility',
           node,
-          !noFix ? getAccessibilityFixer(code, node, 'replace', node.accessibility ?? '', 'public') : null,
-          { data },
+          !noFix
+            ? getAccessibilityFixer(
+                code,
+                node,
+                'replace',
+                node.accessibility ?? '',
+                'public'
+              )
+            : null,
+          { data }
         );
       }
       break;
@@ -138,8 +148,10 @@ const checkStaticModifier = (
         reportIssue(
           'missingAccessibility',
           node,
-          !noFix ? getAccessibilityFixer(code, node, 'remove', node.accessibility) : null,
-          { data },
+          !noFix
+            ? getAccessibilityFixer(code, node, 'remove', node.accessibility)
+            : null,
+          { data }
         );
       }
       break;
@@ -157,7 +169,7 @@ const checkAccessibilityModifier = (
     | TSESTree.TSAbstractPropertyDefinition
     | TSESTree.TSParameterProperty,
   data: ReportIssueData,
-  noFix?: true,
+  noFix?: true
 ) => {
   if (prop.ignoredNames?.includes(data.name)) return;
 
@@ -167,8 +179,10 @@ const checkAccessibilityModifier = (
         reportIssue(
           'unwantedPublicAccessibility',
           node,
-          !noFix ? getAccessibilityFixer(code, node, 'add', prop.fixWith) : null,
-          { data },
+          !noFix
+            ? getAccessibilityFixer(code, node, 'add', prop.fixWith)
+            : null,
+          { data }
         );
       }
       break;
@@ -178,7 +192,7 @@ const checkAccessibilityModifier = (
           'missingAccessibility',
           node,
           !noFix ? getAccessibilityFixer(code, node, 'remove', 'public') : null,
-          { data },
+          { data }
         );
       }
       break;
@@ -191,13 +205,16 @@ const parseOverrideAccessibility = (
     accessibility: 'off' | AccessibilityLevel;
     ignoredNames: string[];
   },
-  fixWith: AccessibilityFixWith = 'protected',
+  fixWith: AccessibilityFixWith = 'protected'
 ): AccessibilityLevelAndFixer => {
   if (value === 'off') return 'off';
   const hasFixer = typeof value === 'object';
 
-  const accessibility = (hasFixer ? value.accessibility : value) || option.accessibility;
-  const ignoredNames = [...((hasFixer && value.ignoredNames) || option.ignoredNames)];
+  const accessibility =
+    (hasFixer ? value.accessibility : value) || option.accessibility;
+  const ignoredNames = [
+    ...((hasFixer && value.ignoredNames) || option.ignoredNames)
+  ];
 
   switch (accessibility) {
     case 'off':
@@ -205,14 +222,16 @@ const parseOverrideAccessibility = (
     case 'no-public':
       return {
         accessibility: 'no-public',
-        ignoredNames,
+        ignoredNames
       };
     case 'explicit':
     default:
       return {
         accessibility: 'explicit',
-        fixWith: (hasFixer && value.accessibility === 'explicit' && value.fixWith) || fixWith,
-        ignoredNames,
+        fixWith:
+          (hasFixer && value.accessibility === 'explicit' && value.fixWith) ||
+          fixWith,
+        ignoredNames
       };
   }
 };
@@ -228,21 +247,36 @@ const create: ESLintUtils.RuleCreateAndOptions<
   const fixWith = option.fixWith ?? 'protected';
   const baseOption = {
     accessibility: option.accessibility || 'explicit',
-    ignoredNames: [...new Set(option.ignoredNames || []).values()],
+    ignoredNames: [...new Set(option.ignoredNames || []).values()]
   };
   const overrides = option.overrides || {};
 
   const realOption = {
-    staticAccessibility: (option.staticAccessibility || 'no-accessibility') as StaticAccessibilityLevel,
+    staticAccessibility: (option.staticAccessibility ||
+      'no-accessibility') as StaticAccessibilityLevel,
     constructors: parseOverrideAccessibility(
       overrides?.constructors,
-      baseOption.accessibility === 'explicit' ? { accessibility: 'no-public', ignoredNames: [] } : baseOption,
-      option.fixWith ?? 'public',
+      baseOption.accessibility === 'explicit'
+        ? { accessibility: 'no-public', ignoredNames: [] }
+        : baseOption,
+      option.fixWith ?? 'public'
     ),
-    parameterProperties: parseOverrideAccessibility(overrides.parameterProperties, baseOption, fixWith),
-    properties: parseOverrideAccessibility(overrides.properties, baseOption, fixWith),
-    accessors: parseOverrideAccessibility(overrides.accessors, baseOption, fixWith),
-    methods: parseOverrideAccessibility(overrides.methods, baseOption, fixWith),
+    parameterProperties: parseOverrideAccessibility(
+      overrides.parameterProperties,
+      baseOption,
+      fixWith
+    ),
+    properties: parseOverrideAccessibility(
+      overrides.properties,
+      baseOption,
+      fixWith
+    ),
+    accessors: parseOverrideAccessibility(
+      overrides.accessors,
+      baseOption,
+      fixWith
+    ),
+    methods: parseOverrideAccessibility(overrides.methods, baseOption, fixWith)
   };
 
   const reportIssue = getContextReportIssue(context);
@@ -250,13 +284,41 @@ const create: ESLintUtils.RuleCreateAndOptions<
   const sourceCode = context.getSourceCode();
 
   return {
-    MethodDefinition: (node) => checkMethodAccessibilityModifier(sourceCode, node, realOption, reportIssue),
-    TSAbstractMethodDefinition: (node) => checkMethodAccessibilityModifier(sourceCode, node, realOption, reportIssue),
-    PropertyDefinition: (node) => checkPropertyAccessibilityModifier(sourceCode, node, realOption, reportIssue),
-    TSAbstractPropertyDefinition: (node) =>
-      checkPropertyAccessibilityModifier(sourceCode, node, realOption, reportIssue),
-    TSParameterProperty: (node) =>
-      checkParameterPropertyAccessibilityModifier(sourceCode, node, realOption.parameterProperties, reportIssue),
+    MethodDefinition: node =>
+      checkMethodAccessibilityModifier(
+        sourceCode,
+        node,
+        realOption,
+        reportIssue
+      ),
+    TSAbstractMethodDefinition: node =>
+      checkMethodAccessibilityModifier(
+        sourceCode,
+        node,
+        realOption,
+        reportIssue
+      ),
+    PropertyDefinition: node =>
+      checkPropertyAccessibilityModifier(
+        sourceCode,
+        node,
+        realOption,
+        reportIssue
+      ),
+    TSAbstractPropertyDefinition: node =>
+      checkPropertyAccessibilityModifier(
+        sourceCode,
+        node,
+        realOption,
+        reportIssue
+      ),
+    TSParameterProperty: node =>
+      checkParameterPropertyAccessibilityModifier(
+        sourceCode,
+        node,
+        realOption.parameterProperties,
+        reportIssue
+      )
   };
 };
 
@@ -269,7 +331,7 @@ function checkMethodAccessibilityModifier(
     accessors: AccessibilityLevelAndFixer;
     methods: AccessibilityLevelAndFixer;
   },
-  reportIssue: ReportIssue,
+  reportIssue: ReportIssue
 ) {
   let nodeType = 'method definition';
   let accessibility: 'off' | AccessibilityLevel = 'off';
@@ -281,7 +343,8 @@ function checkMethodAccessibilityModifier(
       if (option.constructors === 'off') break;
       accessibility = option.constructors.accessibility;
       ignoredNames = option.constructors.ignoredNames || [];
-      if (option.constructors.accessibility === 'explicit') fixWith = option.constructors.fixWith;
+      if (option.constructors.accessibility === 'explicit')
+        fixWith = option.constructors.fixWith;
       break;
     case 'get':
     case 'set':
@@ -289,35 +352,50 @@ function checkMethodAccessibilityModifier(
       if (option.accessors === 'off') break;
       accessibility = option.accessors.accessibility;
       ignoredNames = option.accessors.ignoredNames || [];
-      if (option.accessors.accessibility === 'explicit') fixWith = option.accessors.fixWith;
+      if (option.accessors.accessibility === 'explicit')
+        fixWith = option.accessors.fixWith;
       break;
     case 'method':
     default:
       if (option.methods === 'off') break;
       accessibility = option.methods.accessibility;
       ignoredNames = option.methods.ignoredNames || [];
-      if (option.methods.accessibility === 'explicit') fixWith = option.methods.fixWith;
+      if (option.methods.accessibility === 'explicit')
+        fixWith = option.methods.fixWith;
       break;
   }
 
-  const { name: nodeName } = utils.getNameFromMember(node, code);
+  const { name: nodeName } = getNameFromMember(node, code);
 
   const data = { type: nodeType, name: nodeName };
 
-  if (!checkStaticModifier(code, option.staticAccessibility, reportIssue, node, data)) return;
+  if (
+    !checkStaticModifier(
+      code,
+      option.staticAccessibility,
+      reportIssue,
+      node,
+      data
+    )
+  )
+    return;
 
-  if (accessibility === 'off' || node.key.type === AST_NODE_TYPES.PrivateIdentifier) return;
+  if (
+    accessibility === 'off' ||
+    node.key.type === AST_NODE_TYPES.PrivateIdentifier
+  )
+    return;
 
   checkAccessibilityModifier(
     code,
     {
       accessibility,
       fixWith,
-      ignoredNames,
+      ignoredNames
     },
     reportIssue,
     node,
-    data,
+    data
   );
 }
 
@@ -328,14 +406,27 @@ function checkPropertyAccessibilityModifier(
     staticAccessibility: StaticAccessibilityLevel;
     properties: AccessibilityLevelAndFixer;
   },
-  reportIssue: ReportIssue,
+  reportIssue: ReportIssue
 ) {
-  const { name: nodeName } = utils.getNameFromMember(node, code);
+  const { name: nodeName } = getNameFromMember(node, code);
   const data = { type: 'class property', name: nodeName };
 
-  if (!checkStaticModifier(code, option.staticAccessibility, reportIssue, node, data)) return;
+  if (
+    !checkStaticModifier(
+      code,
+      option.staticAccessibility,
+      reportIssue,
+      node,
+      data
+    )
+  )
+    return;
 
-  if (option.properties === 'off' || node.key.type === AST_NODE_TYPES.PrivateIdentifier) return;
+  if (
+    option.properties === 'off' ||
+    node.key.type === AST_NODE_TYPES.PrivateIdentifier
+  )
+    return;
 
   checkAccessibilityModifier(code, option.properties, reportIssue, node, data);
 }
@@ -344,83 +435,99 @@ function checkParameterPropertyAccessibilityModifier(
   code: TSESLint.SourceCode,
   node: TSESTree.TSParameterProperty,
   prop: AccessibilityLevelAndFixer,
-  reportIssue: ReportIssue,
+  reportIssue: ReportIssue
 ) {
-  if (prop === 'off' || !node.readonly || node.parameter.type === AST_NODE_TYPES.RestElement) return;
+  if (
+    prop === 'off' ||
+    !node.readonly ||
+    node.parameter.type === AST_NODE_TYPES.RestElement
+  )
+    return;
 
   const nodeName =
     node.parameter.type === AST_NODE_TYPES.Identifier
       ? node.parameter.name
-      : ((node.parameter as unknown as TSESTree.AssignmentPattern).left as TSESTree.Identifier).name;
+      : (
+          (node.parameter as unknown as TSESTree.AssignmentPattern)
+            .left as TSESTree.Identifier
+        ).name;
 
-  checkAccessibilityModifier(code, prop, reportIssue, node, { type: 'parameter property', name: nodeName });
+  checkAccessibilityModifier(code, prop, reportIssue, node, {
+    type: 'parameter property',
+    name: nodeName
+  });
 }
 
-const sampleAccessibilityLevel = { enum: ['explicit', 'no-public'] };
+const SampleAccessibilityLevels = ['off', 'explicit'];
 
-const fullAccessibilityLevel = { enum: [...sampleAccessibilityLevel.enum, 'off'] };
+const FullAccessibilityLevel = {
+  enum: [...SampleAccessibilityLevels, 'no-public']
+};
 
-const fixWithLevel = { enum: ['public', 'protected', 'private'] };
-
-const schemaOverrideProperties = {
-  accessibility: fullAccessibilityLevel,
-  fixWith: fixWithLevel,
+const SchemaOverrideProperties = {
+  accessibility: FullAccessibilityLevel,
+  fixWith: { enum: ['public', 'protected', 'private'] },
   ignoredNames: {
     type: 'array',
     items: {
-      type: 'string',
-    },
-  },
+      type: 'string'
+    }
+  }
 };
 
-const schemaOverride = {
+const SchemaOverride = {
   oneOf: [
-    fullAccessibilityLevel,
+    FullAccessibilityLevel,
     {
       type: 'object',
-      properties: schemaOverrideProperties,
-      additionalProperties: false,
-    },
-  ],
+      properties: SchemaOverrideProperties,
+      additionalProperties: false
+    }
+  ]
 };
 
-const schema = [
-  {
-    type: 'object',
-    properties: {
-      ...schemaOverrideProperties,
-      staticAccessibility: { enum: ['off', 'explicit', 'no-accessibility'] },
-      overrides: {
-        type: 'object',
-        properties: {
-          accessors: schemaOverride,
-          constructors: schemaOverride,
-          methods: schemaOverride,
-          properties: schemaOverride,
-          parameterProperties: schemaOverride,
-        },
-      },
-    },
-    additionalProperties: false,
-  },
-];
+const name = 'explicit-member-accessibility' as const;
 
-export const name = 'explicit-member-accessibility' as const;
-
-export const rule = ESLintUtils.RuleCreator((ruleName) => `https://typescript-eslint.io/rules/${ruleName}/`)({
+const rule = ESLintUtils.RuleCreator(
+  ruleName => `https://typescript-eslint.io/rules/${ruleName}/`
+)({
   name,
   meta: {
     type: 'problem',
     fixable: 'code',
     docs: {
       recommended: false,
-      description: 'Require explicit accessibility modifiers on class properties and methods',
+      description:
+        'Require explicit accessibility modifiers on class properties and methods'
     },
     messages: {
-      missingAccessibility: 'Missing accessibility modifier on {{type}} {{name}}.',
-      unwantedPublicAccessibility: 'Public accessibility modifier on {{type}} {{name}}.',
+      missingAccessibility:
+        'Missing accessibility modifier on {{type}} {{name}}.',
+      unwantedPublicAccessibility:
+        'Public accessibility modifier on {{type}} {{name}}.'
     },
-    schema,
+    schema: [
+      {
+        type: 'object',
+        properties: {
+          ...SchemaOverrideProperties,
+          staticAccessibility: {
+            enum: [...SampleAccessibilityLevels, 'no-accessibility']
+          },
+          overrides: {
+            type: 'object',
+            properties: {
+              accessors: SchemaOverride,
+              constructors: SchemaOverride,
+              methods: SchemaOverride,
+              properties: SchemaOverride,
+              parameterProperties: SchemaOverride
+            }
+          }
+        },
+        additionalProperties: false
+      }
+    ]
   },
   defaultOptions: [
     {
@@ -428,9 +535,11 @@ export const rule = ESLintUtils.RuleCreator((ruleName) => `https://typescript-es
       staticAccessibility: 'no-accessibility',
       fixWith: 'protected',
       overrides: {
-        constructors: 'no-public',
-      },
-    },
+        constructors: 'no-public'
+      }
+    }
   ],
-  create,
+  create
 });
+
+export default { name, rule };

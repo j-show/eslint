@@ -11,17 +11,17 @@ module.exports = {
     'plugin:import/typescript',
 
     'prettier',
-    'plugin:prettier/recommended',
+    'plugin:prettier/recommended'
   ],
   plugins: ['prettier', 'unused-imports', 'simple-import-sort'],
   parser: '@typescript-eslint/parser',
   env: {
     es2020: true,
-    node: true,
+    node: true
   },
   parserOptions: {
     ecmaVersion: 2020,
-    sourceType: 'module',
+    sourceType: 'module'
   },
   rules: {
     'no-restricted-globals': ['error', [...NodeGlobals]],
@@ -37,7 +37,10 @@ module.exports = {
     'no-fallthrough': 'warn',
     'no-use-before-define': 'off',
 
-    'prefer-const': ['error', { ignoreReadBeforeAssign: true, destructuring: 'all' }],
+    'prefer-const': [
+      'error',
+      { ignoreReadBeforeAssign: true, destructuring: 'all' }
+    ],
     'default-param-last': ['error'],
 
     'prettier/prettier': [1, require('./.prettierrc.js')],
@@ -56,10 +59,18 @@ module.exports = {
     'unused-imports/no-unused-imports': 'error',
     'unused-imports/no-unused-vars': [
       'error',
-      { vars: 'all', varsIgnorePattern: '^_', args: 'after-used', argsIgnorePattern: '^_' },
+      {
+        vars: 'all',
+        varsIgnorePattern: '^_',
+        args: 'after-used',
+        argsIgnorePattern: '^_'
+      }
     ],
 
-    '@typescript-eslint/no-empty-function': ['error', { allow: ['arrowFunctions', 'decoratedFunctions'] }],
+    '@typescript-eslint/no-empty-function': [
+      'error',
+      { allow: ['arrowFunctions', 'decoratedFunctions'] }
+    ],
     '@typescript-eslint/no-empty-interface': 'off',
     '@typescript-eslint/no-inferrable-types': 'off',
     '@typescript-eslint/no-namespace': 'off',
@@ -71,7 +82,7 @@ module.exports = {
     '@typescript-eslint/no-unused-vars': 'off',
     '@typescript-eslint/no-use-before-define': [
       'warn',
-      { functions: false, classes: false, typedefs: false, variables: false },
+      { functions: false, classes: false, typedefs: false, variables: false }
     ],
 
     '@typescript-eslint/unbound-method': ['off', { ignoreStatic: true }],
@@ -87,9 +98,9 @@ module.exports = {
           Number: { message: "Use 'number' instead.", fixWith: 'number' },
           Boolean: { message: "Use 'boolean' instead.", fixWith: 'boolean' },
           '{}': false,
-          Function: false,
-        },
-      },
+          Function: false
+        }
+      }
     ],
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/explicit-function-return-type': 'off',
@@ -98,12 +109,15 @@ module.exports = {
     '@typescript-eslint/await-thenable': 'off',
     '@typescript-eslint/require-await': 'off',
 
-    '@typescript-eslint/class-name-casing': ['off', { allowUnderscorePrefix: true }],
+    '@typescript-eslint/class-name-casing': [
+      'off',
+      { allowUnderscorePrefix: true }
+    ]
   },
   overrides: [
     {
       files: ['test/**/*.js'],
-      env: { mocha: true },
-    },
-  ],
+      env: { mocha: true }
+    }
+  ]
 };

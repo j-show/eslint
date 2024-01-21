@@ -1,32 +1,38 @@
 {
-  "include": ["src", "rules"],
-  "exclude": ["node_modules"],
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "dist",
+    "test"
+  ],
   "compilerOptions": {
     "baseUrl": ".",
-    "rootDir": "./src",
     "outDir": "./dist",
-    "target": "es2019",
-    "lib": ["es5", "es2015", "es2016", "es2017", "esnext.asynciterable", "esnext"],
+    "types": [
+      "node"
+    ],
+    "typeRoots": [
+      "node_modules/@types",
+      "node_modules/@typescript-eslint/types"
+    ],
+    "target": "ESNext",
     "module": "commonjs",
     "moduleResolution": "node",
     "allowJs": false,
-    "declaration": false,
+    "declaration": true,
     "downlevelIteration": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "importHelpers": true,
     "sourceMap": true,
-
     "noImplicitAny": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-
     "preserveConstEnums": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
-    "suppressExcessPropertyErrors": true,
-    "suppressImplicitAnyIndexErrors": true,
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
     "isolatedModules": true,
