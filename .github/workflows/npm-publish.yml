@@ -24,14 +24,15 @@ jobs:
           GREF: ${{ github.ref }}
 
       - name: Change package version
-        run: yarn version --no-git-tag-version --new-version $TARGET_VERSION
+        run: npm version $TARGET_VERSION --no-git-tag-version
         env:
           TARGET_VERSION: ${{ steps.github-ref.outputs.tag }}
 
-      - name: Install Dependencies
-        run: npm i
+      - name: Install Dependencies & Build
+        run: npm i && npm build
 
       - name: Publish
-        run: npm publish
+        run: cd dist && npm publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          TARGET_VERSION: ${{ steps.github-ref.outputs.tag }}
+          # NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,0 +1,11 @@
+{
+  "include": ["./**/*.ts"],
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "downlevelIteration": true,
+    "esModuleInterop": true,
+    "importHelpers": true
+  }
+}

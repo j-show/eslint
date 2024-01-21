@@ -5,7 +5,7 @@
 dist/
 node_modules/
 
-test/coverage/
+packages/eslint/test/coverage/
 
 .DS_Store/
 .DS_Store
