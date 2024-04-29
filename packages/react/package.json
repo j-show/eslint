@@ -1,0 +1,19 @@
+{
+  "name": "react",
+  "version": "0.0.0",
+  "scripts": {
+    "preview": "vite",
+    "test": "eslint . --ext .ts,.tsx,.js, --report-unused-disable-directives --max-warnings 0"
+  },
+  "dependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint-plugin-jshow": "../../dist",
+    "vite": "^5.1.1"
+  }
+}

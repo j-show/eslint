@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "dist",
+    "test"
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": "./dist",
+    "typeRoots": [
+      "node_modules/@types",
+      "node_modules/@typescript-eslint/types"
+    ],
+    "declaration": true,
+    "sourceMap": false
+  }
+}

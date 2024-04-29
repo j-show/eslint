@@ -1,20 +1,14 @@
 {
-  "name": "eslint-plugin-jshow",
-  "version": "1.0.2",
-  "main": "dist/index.js",
-  "types": "dist/@types/index.d.ts",
-  "files": [
-    "/dist/*",
-    "/package.json",
-    "/README.md"
-  ],
+  "name": "eslint-plugin-jshow-mono",
+  "version": "1.0.5",
+  "license": "MIT",
+  "description": "ESLint plugin for jShow",
   "keywords": [
     "eslint",
     "eslint-plugin",
     "jshow",
     "eslint-plugin-jshow"
   ],
-  "license": "MIT",
   "homepage": "https://github.com/j-show/eslint-plugin-jshow",
   "repository": {
     "type": "git",
@@ -24,53 +18,37 @@
     "url": "https://github.com/j-show/eslint-plugin-jshow/issues"
   },
   "scripts": {
-    "precommit": "lint-staged",
     "prepare": "husky install",
-    "prepublishOnly": "npm run build",
-    "build": "rm -rf ./dist && tsc",
-    "test": "jest --coverage"
+    "precommit": "lint-staged",
+    "build": "ts-node -P ./scripts/tsconfig.json -T ./scripts/publish",
+    "clean": "rm -rf ./dist && npm run clean:rules",
+    "clean:rules": "npm run clean --workspace=eslint",
+    "test:rules": "npm run test --workspace=eslint",
+    "test:react": "npm run test --workspace=react",
+    "test:vue": "npm run test --workspace=vue",
+    "preview:react": "npm run preview --workspace=react",
+    "preview:vue": "npm run preview --workspace=vue"
   },
-  "dependencies": {
-    "@typescript-eslint/eslint-plugin": "^5",
-    "@typescript-eslint/parser": "^5",
-    "eslint": "latest",
-    "eslint-config-prettier": "latest",
-    "eslint-plugin-eslint-plugin": "latest",
-    "eslint-plugin-import": "latest",
-    "eslint-plugin-node": "latest",
-    "eslint-plugin-prettier": "latest",
-    "eslint-plugin-react": "latest",
-    "eslint-plugin-react-hooks": "latest",
-    "eslint-plugin-simple-import-sort": "latest",
-    "eslint-plugin-unused-imports": "latest",
-    "eslint-plugin-vue": "latest",
-    "prettier": "latest",
-    "vue-eslint-parser": "latest"
+  "engines": {
+    "pnpm": ">=8"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "peerDependencies": {
     "prettier": ">=3"
   },
   "devDependencies": {
-    "@types/common-tags": "^1.8.2",
-    "@types/lodash": "^4.14.199",
-    "@types/node": "^20.8.6",
-    "common-tags": "^1.8.2",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.11.5",
+    "chalk": "^4.1.0",
+    "execa": "^4.0.2",
+    "fs-extra": "^11.2.0",
     "husky": "latest",
-    "jest": "^29.7.0",
     "lint-staged": "latest",
-    "lodash": "^4.17.21",
-    "mocha": "^10.2.0",
-    "ts-jest": "^29.1.1",
-    "typescript": "5"
-  },
-  "lint-staged": {
-    "*.{md,json}": [
-      "prettier --config ./.prettierrc.js --write",
-      "git add"
-    ],
-    "*.{ts,js,vue,tsx}": [
-      "prettier --config ./.prettierrc.js --write",
-      "eslint --config ./.eslintrc.js --fix --quiet"
-    ]
+    "prettier": "latest",
+    "ts-node": "^10.9.2",
+    "tslib": "^2.6.2",
+    "typescript": "^5.3.3"
   }
 }
