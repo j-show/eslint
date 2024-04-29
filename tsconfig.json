@@ -1,24 +1,8 @@
 {
-  "include": [
-    "src"
-  ],
-  "exclude": [
-    "dist",
-    "test"
-  ],
   "compilerOptions": {
-    "baseUrl": ".",
-    "outDir": "./dist",
-    "types": [
-      "node"
-    ],
-    "typeRoots": [
-      "node_modules/@types",
-      "node_modules/@typescript-eslint/types"
-    ],
     "target": "ESNext",
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "allowJs": false,
     "declaration": true,
     "downlevelIteration": false,
