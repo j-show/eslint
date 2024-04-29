@@ -1,13 +1,20 @@
 {
-  "name": "eslint-plugin-jshow-mono",
-  "version": "1.0.5",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "pnpm": ">=8"
+  },
   "license": "MIT",
-  "description": "ESLint plugin for jShow",
+  "description": "ESLint for jShow",
   "keywords": [
     "eslint",
     "eslint-plugin",
+    "eslint-config",
     "jshow",
-    "eslint-plugin-jshow"
+    "eslint-plugin-jshow",
+    "eslint-config-jshow"
   ],
   "homepage": "https://github.com/j-show/eslint-plugin-jshow",
   "repository": {
@@ -20,33 +27,30 @@
   "scripts": {
     "prepare": "husky install",
     "precommit": "lint-staged",
-    "build": "ts-node -P ./scripts/tsconfig.json -T ./scripts/publish",
-    "clean": "rm -rf ./dist && npm run clean:rules",
-    "clean:rules": "npm run clean --workspace=eslint",
-    "test:rules": "npm run test --workspace=eslint",
+    "build": "npm run clean && npm run build:rule && npm run build:cfg",
+    "build:rule": "ts-node -P ./scripts/tsconfig.json -T ./scripts/build/rule",
+    "build:cfg": "ts-node -P ./scripts/tsconfig.json -T ./scripts/build/config",
+    "clean": "rm -rf ./dist && rm -rf ./packages/**/dist",
+    "test:rule": "npm run test --workspace=rule",
     "test:react": "npm run test --workspace=react",
     "test:vue": "npm run test --workspace=vue",
     "preview:react": "npm run preview --workspace=react",
     "preview:vue": "npm run preview --workspace=vue"
-  },
-  "engines": {
-    "pnpm": ">=8"
-  },
-  "workspaces": [
-    "packages/*"
-  ],
-  "peerDependencies": {
-    "prettier": ">=3"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.11.5",
     "chalk": "^4.1.0",
     "execa": "^4.0.2",
+    "eslint": "^8",
+    "eslint-config-prettier": "latest",
+    "eslint-plugin-prettier": "latest",
+    "eslint-plugin-jshow": "1.0.5",
+    "typescript-eslint": "latest",
     "fs-extra": "^11.2.0",
     "husky": "latest",
     "lint-staged": "latest",
-    "prettier": "latest",
+    "prettier": ">=3",
     "ts-node": "^10.9.2",
     "tslib": "^2.6.2",
     "typescript": "^5.3.3"

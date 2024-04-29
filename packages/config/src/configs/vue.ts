@@ -1,6 +1,6 @@
 import { TSESLint } from '@typescript-eslint/utils';
 
-export const config: TSESLint.Linter.Config = {
+const config: TSESLint.Linter.Config = {
   extends: ['plugin:jshow/browser', 'plugin:vue/vue3-recommended'],
   plugins: ['vue'],
   parser: 'vue-eslint-parser',
@@ -37,3 +37,5 @@ export const config: TSESLint.Linter.Config = {
     }
   ]
 };
+
+export default config;

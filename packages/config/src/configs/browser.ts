@@ -1,6 +1,6 @@
 import { TSESLint } from '@typescript-eslint/utils';
 
-export const config: TSESLint.Linter.Config = {
+const config: TSESLint.Linter.Config = {
   extends: ['plugin:jshow/typescript'],
   parserOptions: {
     ecmaFeatures: {
@@ -19,3 +19,5 @@ export const config: TSESLint.Linter.Config = {
     //#endregion
   }
 };
+
+export default config;
