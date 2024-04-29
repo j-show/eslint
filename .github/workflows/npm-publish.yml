@@ -34,5 +34,4 @@ jobs:
       - name: Publish
         run: cd dist && npm publish
         env:
-          TARGET_VERSION: ${{ steps.github-ref.outputs.tag }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

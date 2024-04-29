@@ -1,6 +1,6 @@
 import { TSESLint } from '@typescript-eslint/utils';
 
-export const config: TSESLint.Linter.Config = {
+const config: TSESLint.Linter.Config = {
   extends: ['plugin:jshow/browser', 'plugin:react/recommended'],
   plugins: ['react', 'react-hooks'],
   settings: {
@@ -43,3 +43,5 @@ export const config: TSESLint.Linter.Config = {
     }
   ]
 };
+
+export default config;

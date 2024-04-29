@@ -1,6 +1,6 @@
 import { TSESLint } from '@typescript-eslint/utils';
 
-export const config: TSESLint.Linter.Config = {
+const config: TSESLint.Linter.Config = {
   extends: [
     'plugin:import/errors',
     'plugin:import/warnings',
@@ -15,3 +15,5 @@ export const config: TSESLint.Linter.Config = {
     'import/no-named-as-default': 'off'
   }
 };
+
+export default config;

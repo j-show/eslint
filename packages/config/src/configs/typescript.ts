@@ -1,6 +1,6 @@
 import { TSESLint } from '@typescript-eslint/utils';
 
-export const config: TSESLint.Linter.Config = {
+const config: TSESLint.Linter.Config = {
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
@@ -231,3 +231,5 @@ export const config: TSESLint.Linter.Config = {
     }
   ]
 };
+
+export default config;
