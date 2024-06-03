@@ -8,14 +8,6 @@
   },
   "license": "MIT",
   "description": "ESLint for jShow",
-  "keywords": [
-    "eslint",
-    "eslint-plugin",
-    "eslint-config",
-    "jshow",
-    "eslint-plugin-jshow",
-    "eslint-config-jshow"
-  ],
   "homepage": "https://github.com/j-show/eslint-plugin-jshow",
   "repository": {
     "type": "git",

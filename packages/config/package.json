@@ -1,5 +1,11 @@
 {
   "name": "config",
+  "keywords": [
+    "eslint",
+    "eslint-config",
+    "jshow",
+    "eslint-config-jshow"
+  ],
   "scripts": {
     "build": "tsc"
   },
