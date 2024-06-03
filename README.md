@@ -13,7 +13,7 @@
 [![pro-lic]][pro-npm]
 [![pro-ct]][pro-chat]
 
-[pro-github]: https://github.com/j-show/eslint-plugin-jshow
+[pro-github]: https://github.com/j-show/eslint-jshow
 [pro-npm]: https://npmjs.com/package/eslint-plugin-jshow
 [pro-chat]: https://gitter.im/j-show/eslint-plugin-jshow
 [pro-travisci]: https://travis-ci.org/j-show/eslint-plugin-jshow
@@ -75,7 +75,7 @@ External eslint build-in rule (explicit-member-accessibility), allow custom acce
 	enum Accessibility {
 		// off explicit
 		"off",
-		// [default] explicit accessibility	 
+		// [default] explicit accessibility
 		"explicit",
 		// explicit accessibility and remove public accessibility
 		"no-public"
@@ -90,7 +90,7 @@ External eslint build-in rule (explicit-member-accessibility), allow custom acce
 		"off",
 		// explicit accessibility
 		"explicit",
-		// [default] explicit accessibility and remove accessibility, 
+		// [default] explicit accessibility and remove accessibility,
 		"no-accessibility"
 	}
 	```
