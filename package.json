@@ -1,20 +1,21 @@
 {
+  "name": "eslint-jshow",
+  "license": "MIT",
+  "description": "ESLint for jShow",
+  "homepage": "https://github.com/j-show/eslint-jshow",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/j-show/eslint-jshow.git"
+  },
+  "bugs": {
+    "url": "https://github.com/j-show/eslint-jshow/issues"
+  },
   "private": true,
   "workspaces": [
     "packages/*"
   ],
   "engines": {
     "pnpm": ">=8"
-  },
-  "license": "MIT",
-  "description": "ESLint for jShow",
-  "homepage": "https://github.com/j-show/eslint-plugin-jshow",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/j-show/eslint-plugin-jshow.git"
-  },
-  "bugs": {
-    "url": "https://github.com/j-show/eslint-plugin-jshow/issues"
   },
   "scripts": {
     "prepare": "husky install",
