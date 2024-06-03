@@ -1,5 +1,11 @@
 {
   "name": "rule",
+  "keywords": [
+    "eslint",
+    "eslint-plugin",
+    "jshow",
+    "eslint-plugin-jshow"
+  ],
   "scripts": {
     "test": "jest --coverage",
     "build": "tsc"

@@ -75,7 +75,7 @@ const generate = async (
         description: ROOT_PKG.description,
         license: ROOT_PKG.license,
         author: ROOT_PKG.author,
-        keywords: ROOT_PKG.keywords,
+        keywords: pkg.keywords ?? ROOT_PKG.keywords ?? [],
         repository: ROOT_PKG.repository,
         homepage: ROOT_PKG.homepage,
         bugs: ROOT_PKG.bugs,
