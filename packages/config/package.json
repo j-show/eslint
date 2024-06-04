@@ -1,5 +1,6 @@
 {
   "name": "config",
+  "description": "ESLint config for jshow",
   "keywords": [
     "eslint",
     "eslint-config",

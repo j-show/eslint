@@ -55,7 +55,6 @@ const generate = async (
 
   await move(path.join(cwd, 'dist'), dist);
   await copy(path.join(ROOT_PATH, 'LICENSE'), path.join(dist, 'LICENSE'));
-  await copy(path.join(ROOT_PATH, 'README.md'), path.join(dist, 'README.md'));
 
   info('Generate dist success!');
 
@@ -72,7 +71,7 @@ const generate = async (
       {
         name,
         version,
-        description: ROOT_PKG.description,
+        description: pkg.description ?? ROOT_PKG.description ?? '',
         license: ROOT_PKG.license,
         author: ROOT_PKG.author,
         keywords: pkg.keywords ?? ROOT_PKG.keywords ?? [],
