@@ -11,15 +11,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org/
 
       - name: Get release tag
         id: github-ref
-        run: echo "::set-output name=tag::$(echo $GREF | awk -F/ '{print $3}')"
+        run: echo "tag=$(echo $GREF | awk -F/ '{print $3}')" >> $GITHUB_OUTPUT
         env:
           GREF: ${{ github.ref }}
 

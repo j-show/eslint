@@ -1,0 +1,35 @@
+name: Pull Request Check
+
+on:
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies & Build
+        run: |
+          npm install
+          npm run build
+
+      - name: Reinstall Dependencies
+        run: |
+          npm install
+          cd examples/react
+          npm install
+          cd ../vue
+          npm install
+
+      - name: Test rule
+        run: npm run test:rule
+
+      - name: Test react
+        run: npm run test:react
+
+      - name: Test vue
+        run: npm run test:vue

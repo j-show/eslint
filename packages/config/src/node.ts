@@ -1,7 +1,7 @@
 import { TSESLint } from '@typescript-eslint/utils';
 
 const config: TSESLint.Linter.Config = {
-  extends: ['plugin:jshow/typescript'],
+  extends: ['jshow/typescript'],
   env: {
     node: true,
     mongo: true
@@ -26,4 +26,4 @@ const config: TSESLint.Linter.Config = {
   }
 };
 
-export default config;
+export = config;
