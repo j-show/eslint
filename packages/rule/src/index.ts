@@ -1,10 +1,9 @@
-import rules from './rules';
+import { rules } from './rules';
 
-export default {
+export = {
   meta: {
     name: '{TARGET_NAME}',
     version: '{TARGET_VERSION}'
   },
   rules
 };
-

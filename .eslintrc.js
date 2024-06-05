@@ -1,9 +1,6 @@
-/* eslint-disable no-restricted-globals */
-
 module.exports = {
   root: true,
-  extends: ['plugin:jshow/typescript'],
-  plugins: ['jshow'],
+  extends: ['jshow/node'],
   overrides: [
     {
       files: ['*.js'],

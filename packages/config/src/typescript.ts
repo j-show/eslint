@@ -9,7 +9,7 @@ const config: TSESLint.Linter.Config = {
     'prettier',
     'plugin:prettier/recommended'
   ],
-  plugins: ['@typescript-eslint', 'prettier', 'simple-import-sort'],
+  plugins: ['@typescript-eslint', 'prettier', 'simple-import-sort', 'jshow'],
 
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -68,7 +68,6 @@ const config: TSESLint.Linter.Config = {
     'no-script-url': 'error',
     'no-self-compare': 'error',
     'no-sequences': 'error',
-    'no-spaced-func': 'error',
     'no-this-before-super': 'error',
     'no-throw-literal': 'off',
     'no-useless-escape': 'warn',
@@ -232,4 +231,4 @@ const config: TSESLint.Linter.Config = {
   ]
 };
 
-export default config;
+export = config;

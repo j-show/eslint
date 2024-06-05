@@ -1,14 +1,14 @@
 {
-  "name": "eslint-jshow",
+  "name": "jshow-eslint",
   "license": "MIT",
   "description": "ESLint for jShow",
-  "homepage": "https://github.com/j-show/eslint-jshow",
+  "homepage": "https://github.com/j-show/eslint",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/j-show/eslint-jshow.git"
+    "url": "git+https://github.com/j-show/eslint.git"
   },
   "bugs": {
-    "url": "https://github.com/j-show/eslint-jshow/issues"
+    "url": "https://github.com/j-show/eslint/issues"
   },
   "private": true,
   "workspaces": [
@@ -20,26 +20,21 @@
   "scripts": {
     "prepare": "husky install",
     "precommit": "lint-staged",
-    "build": "npm run clean && npm run build:rule && npm run build:cfg",
-    "build:rule": "ts-node -P ./scripts/tsconfig.json -T ./scripts/build/rule",
-    "build:cfg": "ts-node -P ./scripts/tsconfig.json -T ./scripts/build/config",
     "clean": "rm -rf ./dist && rm -rf ./packages/**/dist",
+    "build": "npm run clean && npm run build:rule && npm run build:config",
+    "build:config": "ts-node -P ./scripts/tsconfig.json -T ./scripts/build/config",
+    "build:rule": "ts-node -P ./scripts/tsconfig.json -T ./scripts/build/rule",
     "test:rule": "npm run test --workspace=rule",
-    "test:react": "npm run test --workspace=react",
-    "test:vue": "npm run test --workspace=vue",
-    "preview:react": "npm run preview --workspace=react",
-    "preview:vue": "npm run preview --workspace=vue"
+    "test:react": "cd examples/react && npm run test",
+    "test:vue": "cd examples/vue && npm run test",
+    "preview:react": "cd examples/react && npm run preview",
+    "preview:vue": "cd examples/vue && npm run preview"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.11.5",
     "chalk": "^4.1.0",
     "execa": "^4.0.2",
-    "eslint": "^8",
-    "eslint-config-prettier": "latest",
-    "eslint-plugin-prettier": "latest",
-    "eslint-plugin-jshow": "1.0.5",
-    "typescript-eslint": "latest",
     "fs-extra": "^11.2.0",
     "husky": "latest",
     "lint-staged": "latest",
@@ -47,5 +42,12 @@
     "ts-node": "^10.9.2",
     "tslib": "^2.6.2",
     "typescript": "^5.3.3"
+  },
+  "peerDependencies": {
+    "eslint-config-jshow": "./dist/eslint-config-jshow",
+    "eslint-plugin-jshow": "./dist/eslint-plugin-jshow",
+    "eslint-config-prettier": "latest",
+    "eslint-plugin-prettier": "latest",
+    "eslint-plugin-simple-import-sort": "latest"
   }
 }

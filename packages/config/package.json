@@ -1,5 +1,6 @@
 {
   "name": "config",
+  "version": "1.0.4",
   "description": "ESLint config for jshow",
   "keywords": [
     "eslint",
@@ -17,11 +18,13 @@
     "eslint-plugin-react-hooks": "latest",
     "eslint-plugin-simple-import-sort": "latest",
     "eslint-plugin-vue": "latest",
-    "eslint-plugin-jshow": "latest",
     "vue-eslint-parser": "latest"
   },
   "peerDependencies": {
     "eslint": "^8",
     "typescript-eslint": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5"
   }
 }

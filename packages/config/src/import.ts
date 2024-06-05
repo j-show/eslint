@@ -16,4 +16,4 @@ const config: TSESLint.Linter.Config = {
   }
 };
 
-export default config;
+export = config;
