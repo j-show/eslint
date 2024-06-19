@@ -8,6 +8,8 @@ on:
 jobs:
   check-label:
     runs-on: ubuntu-latest
+    outputs:
+      skip_ci: ${{ steps.skip_ci.outputs.value }}
     steps:
       - name: Get PR Number
         id: pr_number
@@ -17,13 +19,8 @@ jobs:
             | jq '.[0].number')
           echo "value=$PR_NUM" >> $GITHUB_OUTPUT
 
-      - name: Skip ci when PR Number is empty
-        if: steps.pr_number.outputs.value == 'null'
-        run: |
-          echo "Not found pr number, abort ci."
-          exit 0
-
       - name: Get PR Labels
+        if: steps.pr_number.outputs.value != 'null'
         id: pr_labels
         run: |
           echo "Fetching labels for pr #${{ steps.pr_number.outputs.value}}"
@@ -33,15 +30,22 @@ jobs:
           echo "value=$LABELS" >> $GITHUB_OUTPUT
 
       - name: Check for 'skip_ci' Label
-        if: steps.pr_labels.outputs.value == 'skip_ci'
+        id: skip_ci
         run: |
-          echo "skip_ci label found, abort ci."
-          exit 0
+          if [ "${{ steps.pr_number.outputs.value }}" == "null" ]; then
+            echo "value=true" >> $GITHUB_OUTPUT
+          fi
+          if [ "${{ steps.pr_labels.outputs.value }}" == "skip_ci" ]; then
+            echo "value=true" >> $GITHUB_OUTPUT
+            echo "skip_ci label found, abort ci."
+          fi
 
   build-packages:
     runs-on: ubuntu-latest
     needs: check-label
+    if: needs.check-label.outputs.skip_ci != 'true'
     outputs:
+      skip_ci: ${{ needs.check-label.outputs.skip_ci }}
       check_config: ${{ steps.check_config.outputs.modified }}
       check_rule: ${{ steps.check_rule.outputs.modified }}
     steps:
@@ -120,6 +124,7 @@ jobs:
   publish-packages:
     runs-on: ubuntu-latest
     needs: build-packages
+    if: needs.build-packages.outputs.skip_ci != 'true'
     steps:
       - name: Setup Node.js
         uses: actions/setup-node@v4
