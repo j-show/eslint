@@ -1,5 +1,4 @@
 import { rules as TSESLintRules } from '@typescript-eslint/eslint-plugin';
-import { requiresQuoting } from '@typescript-eslint/type-utils';
 import { AST_NODE_TYPES } from '@typescript-eslint/types';
 import { TSESLint, TSESTree } from '@typescript-eslint/utils';
 
@@ -37,7 +36,8 @@ export const getNameFromMember = (
   }
   if (member.key.type === AST_NODE_TYPES.Literal) {
     const name = `${member.key.value}`;
-    if (requiresQuoting(name)) {
+    // if (requiresQuoting(name)) {
+    if (name.includes("'")) {
       return {
         type: MemberNameType.Quoted,
         name: `"${name}"`

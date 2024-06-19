@@ -49,6 +49,7 @@ const generate = async (
   dist: string,
   name: string,
   version: string,
+  pkg: Record<string, unknown>,
   callback?: (pkg: Record<string, unknown>) => Record<string, unknown>
 ) => {
   step(`\nGenerating files...`);
@@ -62,7 +63,6 @@ const generate = async (
     data.replace('{TARGET_NAME}', name).replace('{TARGET_VERSION}', version)
   );
 
-  const pkg = readJSONSync(path.join(cwd, 'package.json'));
   const opts = callback?.(pkg) ?? {};
 
   writeFileSync(
@@ -90,19 +90,22 @@ const generate = async (
   info('Generate package.json success!');
 };
 
-const main = async (folderName: string, pkgName: string, pkgVers: string) => {
+const main = async (folderName: string, pkgName: string, pkgVers?: string) => {
   const ROOT_DIST = path.join(ROOT_PATH, 'dist', pkgName);
   const ROOT_CWD = path.join(ROOT_PATH, 'packages', folderName);
 
+  const pkg = readJSONSync(path.join(ROOT_CWD, 'package.json'));
+  if (pkgVers == null) pkgVers = pkg.version ?? ROOT_PKG.version ?? '0.0.1';
+
   await build(ROOT_CWD, ROOT_DIST, pkgName, pkgVers);
 
-  await generate(ROOT_CWD, ROOT_DIST, pkgName, pkgVers);
+  await generate(ROOT_CWD, ROOT_DIST, pkgName, pkgVers, pkg);
 };
 
 export const buildPackage = (
   folderName: string,
   pkgName: string,
-  pkgVers: string
+  pkgVers?: string
 ) => {
   main(folderName, pkgName, pkgVers).catch(err => {
     console.error(err);

@@ -1,0 +1,168 @@
+name: Build and Publish on merge master
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  check-label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get PR Number
+        id: pr_number
+        run: |
+          PR_NUM=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/pulls \
+            | jq '.[0].number')
+          echo "value=$PR_NUM" >> $GITHUB_OUTPUT
+
+      - name: Get PR Labels
+        if: steps.pr_number.outputs.value != 'null'
+        run: |
+          echo "Fetching labels for pr #${{ steps.pr_number.outputs.value}}"
+          LABELS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                  "https://api.github.com/repos/${{ github.repository }}/issues/${{ steps.pr_number.outputs.value }}/labels" \
+                  | jq -r '.[].name')
+          echo "LABELS=$LABELS" >> $GITHUB_ENV
+
+      - name: Check for 'bug' Label
+        run: |
+          if [[ "$LABELS" == *"skip_ci"* ]]; then
+            echo "skip_ci label found, abort ci."
+            exit 1
+          fi
+
+  build-packages:
+    runs-on: ubuntu-latest
+    needs: check-label
+    outputs:
+      check_config: ${{ steps.check_config.outputs.modified }}
+      check_rule: ${{ steps.check_rule.outputs.modified }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Dependencies & Cleanup dist
+        id: last_commit
+        run: |
+          echo "sha=$(git rev-parse HEAD~1)" >> $GITHUB_OUTPUT
+          npm install
+          npm run clean
+
+      # ========================================
+
+      - name: Check for changes in packages/config
+        id: check_config
+        run: echo "modified=$(git diff --name-only ${{ steps.last_commit.outputs.sha }} ${{ github.sha }} -- packages/config | wc -l)" >> $GITHUB_OUTPUT
+
+      - name: Cache packages/config
+        if: steps.check_config.outputs.modified != '0'
+        uses: actions/cache@v3
+        with:
+          path: dist/eslint-config-jshow
+          key: eslint-config-jshow-${{ github.sha }}
+          expire-in: 1d
+
+      - name: Build packages/config
+        if: steps.check_config.outputs.modified != '0'
+        id: build_config
+        run: |
+          cd packages/config
+          npm version patch --no-git-tag-version
+          echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+          cd ../..
+          npm run build:config
+
+      # ========================================
+
+      - name: Check for changes in packages/rule
+        id: check_rule
+        run: echo "modified=$(git diff --name-only ${{ steps.last_commit.outputs.sha }} ${{ github.sha }} -- packages/rule | wc -l)" >> $GITHUB_OUTPUT
+
+      - name: Cache packages/rule
+        if: steps.check_rule.outputs.modified != '0'
+        uses: actions/cache@v3
+        with:
+          path: dist/eslint-plugin-jshow
+          key: eslint-plugin-jshow-${{ github.sha }}
+          expire-in: 1d
+
+      - name: Build packages/rule
+        if: steps.check_rule.outputs.modified != '0'
+        id: build_rule
+        run: |
+          cd packages/rule
+          npm version patch --no-git-tag-version
+          echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+          cd ../..
+          npm run build:rule
+
+      # ========================================
+
+      - name: Upgrade commit
+        if: steps.check_config.outputs.modified != '0' || steps.check_rule.outputs.modified != '0'
+        run: |
+          git status -s
+          COMMIT_MSG=""
+          if [ "${{ steps.build_config.outputs.version }}" != "" ]; then
+            COMMIT_MSG="$COMMIT_MSG\n- eslint-config-jshow ${{ steps.build_config.outputs.version }}"
+          fi
+          if [ "${{ steps.build_rule.outputs.version }}" != "" ]; then
+            COMMIT_MSG="$COMMIT_MSG\n- eslint-plugin-jshow ${{ steps.build_rule.outputs.version }}"
+          fi
+          if [ "$COMMIT_MSG" != "" ]; then
+            COMMIT_MSG="chore: upgrade packages\n$COMMIT_MSG"
+            git config user.email "dev@jshow.org"
+            git config user.name "jShow"
+            echo -e "$COMMIT_MSG" | git commit -a -F -
+            git push
+          fi
+
+  publish-packages:
+    runs-on: ubuntu-latest
+    needs: build-packages
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+
+      # ========================================
+
+      - name: Restore cache packages/config
+        uses: actions/cache@v3
+        with:
+          path: dist/eslint-config-jshow
+          key: eslint-config-jshow-${{ github.sha }}
+
+      - name: Publish eslint-config-jshow
+        if: needs.build-packages.outputs.check_config != '0'
+        run: |
+          cd dist/eslint-config-jshow
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # ========================================
+
+      - name: Restore cache packages/rule
+        uses: actions/cache@v3
+        with:
+          path: dist/eslint-plugin-jshow
+          key: eslint-plugin-jshow-${{ github.sha }}
+
+      - name: Publish eslint-plugin-jshow
+        if: needs.build-packages.outputs.check_rule != '0'
+        run: |
+          cd dist/eslint-plugin-jshow
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+
+
+

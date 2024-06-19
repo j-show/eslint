@@ -1,0 +1,36 @@
+name: Pull Request Check
+
+on:
+  pull_request:
+    branches:
+      - "*"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies & Build
+        run: |
+          npm install
+          npm run build
+          npm install
+
+      - name: Test rule
+        run: npm run test:rule
+
+      - name: Test react
+        if: github.event.pull_request.base.ref == 'master'
+        run: |
+          cd examples/react
+          npm install
+          npm run test
+
+      - name: Test vue
+        if: github.event.pull_request.base.ref == 'master'
+        run: |
+          cd examples/vue
+          npm install
+          npm run test

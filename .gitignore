@@ -1,20 +1,28 @@
-.vscode/
-.idea/
-.eslintcache/
-.circleci/
-dist/
-node_modules/
+node_modules
+dist
 
-packages/eslint/test/coverage/
-
-.DS_Store/
 .DS_Store
 
-package-lock.json
+.eslintcache
+.eslintcache-pre-commit
+.type-coverage
+.history
 
-yarn.lock
+.nx/cache
+
+.next
+.vscode
+.idea
+.idea_modules
+
 *.log
+*.pid
 
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+package-lock.json
+yarn.lock
+
+packages/eslint/test/coverage/

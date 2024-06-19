@@ -10,7 +10,6 @@
     "baseUrl": ".",
     "jsx": "preserve",
     "target": "ESNext",
-    "module": "ESNext",
     "lib": [
       "DOM",
       "ES2017"
