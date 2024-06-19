@@ -1,6 +1,6 @@
 {
   "name": "rule",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "ESLint plugin for jshow",
   "keywords": [
     "eslint",
