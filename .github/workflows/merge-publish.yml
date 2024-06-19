@@ -21,7 +21,7 @@ jobs:
         if: steps.pr_number.outputs.value == 'null'
         run: |
           echo "Not found pr number, abort ci."
-          exit 1
+          exit 0
 
       - name: Get PR Labels
         id: pr_labels
@@ -36,7 +36,7 @@ jobs:
         if: steps.pr_labels.outputs.value == 'skip_ci'
         run: |
           echo "skip_ci label found, abort ci."
-          exit 1
+          exit 0
 
   build-packages:
     runs-on: ubuntu-latest
@@ -63,12 +63,16 @@ jobs:
         id: check_config
         run: echo "modified=$(git diff --name-only ${{ steps.last_commit.outputs.sha }} ${{ github.sha }} -- packages/config | wc -l)" >> $GITHUB_OUTPUT
 
-      - name: Cache packages/config
-        if: steps.check_config.outputs.modified != '0'
+      - name: Check for changes in packages/rule
+        id: check_rule
+        run: echo "modified=$(git diff --name-only ${{ steps.last_commit.outputs.sha }} ${{ github.sha }} -- packages/rule | wc -l)" >> $GITHUB_OUTPUT
+
+      - name: Cache dist
+        if: steps.check_config.outputs.modified != '0' || steps.check_rule.outputs.modified != '0'
         uses: actions/cache@v3
         with:
-          path: dist/eslint-config-jshow
-          key: eslint-config-jshow-${{ github.sha }}
+          path: dist
+          key: eslint-jshow-${{ github.sha }}
           expire-in: 1d
 
       - name: Build packages/config
@@ -80,20 +84,6 @@ jobs:
           echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
           cd ../..
           npm run build:config
-
-      # ========================================
-
-      - name: Check for changes in packages/rule
-        id: check_rule
-        run: echo "modified=$(git diff --name-only ${{ steps.last_commit.outputs.sha }} ${{ github.sha }} -- packages/rule | wc -l)" >> $GITHUB_OUTPUT
-
-      - name: Cache packages/rule
-        if: steps.check_rule.outputs.modified != '0'
-        uses: actions/cache@v3
-        with:
-          path: dist/eslint-plugin-jshow
-          key: eslint-plugin-jshow-${{ github.sha }}
-          expire-in: 1d
 
       - name: Build packages/rule
         if: steps.check_rule.outputs.modified != '0'
@@ -139,11 +129,12 @@ jobs:
 
       # ========================================
 
-      - name: Restore cache packages/config
+      - name: Restore cache
+        if: needs.build-packages.outputs.check_config != '0' || needs.build-packages.outputs.check_rule != '0'
         uses: actions/cache@v3
         with:
-          path: dist/eslint-config-jshow
-          key: eslint-config-jshow-${{ github.sha }}
+          path: dist
+          key: eslint-jshow-${{ github.sha }}
 
       - name: Publish eslint-config-jshow
         if: needs.build-packages.outputs.check_config != '0'
@@ -152,14 +143,6 @@ jobs:
           npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      # ========================================
-
-      - name: Restore cache packages/rule
-        uses: actions/cache@v3
-        with:
-          path: dist/eslint-plugin-jshow
-          key: eslint-plugin-jshow-${{ github.sha }}
 
       - name: Publish eslint-plugin-jshow
         if: needs.build-packages.outputs.check_rule != '0'
