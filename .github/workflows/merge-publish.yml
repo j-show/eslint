@@ -17,21 +17,26 @@ jobs:
             | jq '.[0].number')
           echo "value=$PR_NUM" >> $GITHUB_OUTPUT
 
+      - name: Skip ci when PR Number is empty
+        if: steps.pr_number.outputs.value == 'null'
+        run: |
+          echo "Not found pr number, abort ci."
+          exit 1
+
       - name: Get PR Labels
-        if: steps.pr_number.outputs.value != 'null'
+        id: pr_labels
         run: |
           echo "Fetching labels for pr #${{ steps.pr_number.outputs.value}}"
           LABELS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                   "https://api.github.com/repos/${{ github.repository }}/issues/${{ steps.pr_number.outputs.value }}/labels" \
                   | jq -r '.[].name')
-          echo "LABELS=$LABELS" >> $GITHUB_ENV
+          echo "value=$LABELS" >> $GITHUB_OUTPUT
 
-      - name: Check for 'bug' Label
+      - name: Check for 'skip_ci' Label
+        if: steps.pr_labels.outputs.value == 'skip_ci'
         run: |
-          if [[ "$LABELS" == *"skip_ci"* ]]; then
-            echo "skip_ci label found, abort ci."
-            exit 1
-          fi
+          echo "skip_ci label found, abort ci."
+          exit 1
 
   build-packages:
     runs-on: ubuntu-latest
@@ -118,6 +123,7 @@ jobs:
             git config user.email "dev@jshow.org"
             git config user.name "jShow"
             echo -e "$COMMIT_MSG" | git commit -a -F -
+            git remote set-url origin https://x-access-token:${{ secrets.GIT_TOKEN }}@github.com/${{ github.repository }}.git
             git push
           fi
 
