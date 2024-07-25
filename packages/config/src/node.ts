@@ -20,7 +20,25 @@ const config: TSESLint.Linter.Config = {
 
     //#region @typescript-eslint
 
-    '@typescript-eslint/no-var-requires': 'off'
+    '@typescript-eslint/no-var-requires': 'off',
+
+    //#endregion
+
+    //#region eslint-plugin-simple-import-sort
+
+    'simple-import-sort/imports': [
+      'error',
+      {
+        groups: [
+          ['\\u0000'],
+          ['^node:'],
+          ['^@?[a-zA-Z]'],
+          ['^@/'],
+          ['^\\.\\./'],
+          ['^\\./']
+        ]
+      }
+    ]
 
     //#endregion
   }
