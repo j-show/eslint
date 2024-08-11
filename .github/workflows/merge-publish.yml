@@ -42,6 +42,8 @@ jobs:
 
   build-packages:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     needs: check-label
     if: needs.check-label.outputs.skip_ci != 'true'
     outputs:
@@ -52,12 +54,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Install Dependencies & Cleanup dist
         id: last_commit
         run: |
           echo "sha=$(git rev-parse HEAD~1)" >> $GITHUB_OUTPUT
+          rm -rf ./.npmrc
           npm install
           npm run clean
 
@@ -101,8 +105,9 @@ jobs:
 
       # ========================================
 
-      - name: Upgrade commit
+      - name: Check & Build commit message
         if: steps.check_config.outputs.modified != '0' || steps.check_rule.outputs.modified != '0'
+        id: build_commit
         run: |
           git status -s
           COMMIT_MSG=""
@@ -114,12 +119,19 @@ jobs:
           fi
           if [ "$COMMIT_MSG" != "" ]; then
             COMMIT_MSG="chore: upgrade packages\n$COMMIT_MSG"
-            git config user.email "dev@jshow.org"
-            git config user.name "jShow"
-            echo -e "$COMMIT_MSG" | git commit -a -F -
-            git remote set-url origin https://x-access-token:${{ secrets.GIT_TOKEN }}@github.com/${{ github.repository }}.git
-            git push
           fi
+          echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
+
+      - name: Upgrade commit
+        if: steps.build_commit.outputs.message != ''
+        run: |
+          git config --local user.email "dev@jshow.org"
+          git config --local user.name "jShow"
+          git restore ./.npmrc
+          git add .
+          echo -e "${{ steps.build_commit.outputs.message }}" | git commit -F -
+          git pull --rebase
+          git push "https://${{ github.actor }}:${{ secrets.GIT_TOKEN }}@github.com/${{ github.repository }}.git"
 
   publish-packages:
     runs-on: ubuntu-latest
@@ -156,7 +168,3 @@ jobs:
           npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-
-
-
