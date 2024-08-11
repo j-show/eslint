@@ -210,12 +210,7 @@ const config: TSESLint.Linter.Config = {
 
     //#region eslint-plugin-simple-import-sort
 
-    'simple-import-sort/exports': [
-      'error',
-      {
-        groups: [['\\u0000'], ['^@?[a-zA-Z]'], ['^@/'], ['^\\.\\./'], ['^\\./']]
-      }
-    ],
+    'simple-import-sort/exports': 'error',
     'simple-import-sort/imports': [
       'error',
       {
