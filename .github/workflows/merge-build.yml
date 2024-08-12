@@ -1,9 +1,9 @@
-name: Build and Publish on merge master
+name: Merge And Build on master
 
 on:
   push:
     branches:
-      - master
+      - master11
 
 jobs:
   check-label:
@@ -32,12 +32,17 @@ jobs:
       - name: Check for 'skip_ci' Label
         id: skip_ci
         run: |
-          if [ "${{ steps.pr_number.outputs.value }}" == "null" ]; then
-            echo "value=true" >> $GITHUB_OUTPUT
-          fi
-          if [ "${{ steps.pr_labels.outputs.value }}" == "skip_ci" ]; then
+          if [ "${{ steps.pr_labels.outputs.value }}" == "skip_ci" ]
+          then
             echo "value=true" >> $GITHUB_OUTPUT
             echo "skip_ci label found, abort ci."
+          elif [ "${{ github.repository }}" != "j-show/eslint" ]
+          then
+            echo "value=true" >> $GITHUB_OUTPUT
+            echo "Not target repo, abort ci."
+          elif [ "${{ steps.pr_number.outputs.value }}" == "null" ]
+          then
+            echo "No PR found, next ci."
           fi
 
   build-packages:
@@ -57,15 +62,9 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Install Dependencies & Cleanup dist
+      - name: Get last commit
         id: last_commit
-        run: |
-          echo "sha=$(git rev-parse HEAD~1)" >> $GITHUB_OUTPUT
-          rm -rf ./.npmrc
-          npm install
-          npm run clean
-
-      # ========================================
+        run: echo "sha=$(git rev-parse HEAD~1)" >> $GITHUB_OUTPUT
 
       - name: Check for changes in packages/config
         id: check_config
@@ -74,6 +73,15 @@ jobs:
       - name: Check for changes in packages/rule
         id: check_rule
         run: echo "modified=$(git diff --name-only ${{ steps.last_commit.outputs.sha }} ${{ github.sha }} -- packages/rule | wc -l)" >> $GITHUB_OUTPUT
+
+      # ========================================
+
+      - name: Install Dependencies & Cleanup dist
+        if: steps.check_config.outputs.modified != '0' || steps.check_rule.outputs.modified != '0'
+        run: |
+          rm -rf ./.npmrc
+          npm install
+          npm run clean
 
       - name: Cache dist
         if: steps.check_config.outputs.modified != '0' || steps.check_rule.outputs.modified != '0'
