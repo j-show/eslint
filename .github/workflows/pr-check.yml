@@ -12,6 +12,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: msg
+        run: |
+          echo ${{ github.event.pull_request.base }}
+          echo ${{ github.event.pull_request.target }}
+
       - name: Install Dependencies & Build
         run: |
           rm -rf ./.npmrc
