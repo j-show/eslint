@@ -1,0 +1,10 @@
+name: Release And Publish on muanual trigger
+
+on:
+  watch:
+    types: started
+
+jobs:
+  build_tag:
+    runs-on: ubuntu-latest
+    if: githuib.event.repository.private == false
