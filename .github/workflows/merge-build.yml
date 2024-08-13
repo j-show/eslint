@@ -3,7 +3,7 @@ name: Merge And Build on master
 on:
   push:
     branches:
-      - master
+      - master11
 
 jobs:
   check-label:
