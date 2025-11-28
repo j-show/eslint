@@ -1,10 +1,12 @@
-import { TSESLint } from '@typescript-eslint/utils';
+import { Linter } from 'eslint';
+import globals from 'globals';
 
-const config: TSESLint.Linter.Config = {
-  extends: ['jshow/typescript'],
-  env: {
-    node: true,
-    mongo: true
+import typescriptConfigs from './typescript';
+import { buildCompat } from './utils';
+
+const legacyConfigs: Linter.Config[] = buildCompat(...typescriptConfigs, {
+  languageOptions: {
+    globals: globals.node
   },
   rules: {
     //#region eslint
@@ -20,28 +22,10 @@ const config: TSESLint.Linter.Config = {
 
     //#region @typescript-eslint
 
-    '@typescript-eslint/no-var-requires': 'off',
-
-    //#endregion
-
-    //#region eslint-plugin-simple-import-sort
-
-    'simple-import-sort/imports': [
-      'error',
-      {
-        groups: [
-          ['\\u0000'],
-          ['^node:'],
-          ['^@?[a-zA-Z]'],
-          ['^@/'],
-          ['^\\.\\./'],
-          ['^\\./']
-        ]
-      }
-    ]
+    '@typescript-eslint/no-var-requires': 'off'
 
     //#endregion
   }
-};
+});
 
-export = config;
+export default legacyConfigs;

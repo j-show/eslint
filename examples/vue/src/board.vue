@@ -20,8 +20,13 @@
 </template>
 
 <script lang="ts" setup>
-import Square from "./square.vue";
-import { computed } from "vue";
+import { computed } from 'vue';
+
+import Square from './square.vue';
+
+defineOptions({
+  name: 'GameBoard'
+});
 
 const DEAFULT_LINES = [
   [0, 1, 2],
@@ -31,7 +36,7 @@ const DEAFULT_LINES = [
   [1, 4, 7],
   [2, 5, 8],
   [0, 4, 8],
-  [2, 4, 6],
+  [2, 4, 6]
 ];
 
 const calculateWinner = (squares: string[]) => {
@@ -51,14 +56,14 @@ const props = defineProps<{
   squares: string[];
 }>();
 
-const emit = defineEmits(["play"]);
+const emit = defineEmits(['play']);
 
 const status = computed(() => {
   const winner = calculateWinner(props.squares);
 
   return winner
     ? `Winner: ${winner}`
-    : `Next player: ${props.xIsNext ? "X" : "O"}`;
+    : `Next player: ${props.xIsNext ? 'X' : 'O'}`;
 });
 
 const handleClick = (i: number) => {
@@ -67,11 +72,11 @@ const handleClick = (i: number) => {
 
   const nextSquares = squares.slice();
   if (props.xIsNext) {
-    nextSquares[i] = "X";
+    nextSquares[i] = 'X';
   } else {
-    nextSquares[i] = "O";
+    nextSquares[i] = 'O';
   }
 
-  emit("play", nextSquares);
+  emit('play', nextSquares);
 };
 </script>

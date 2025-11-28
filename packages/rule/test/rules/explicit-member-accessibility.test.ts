@@ -2,7 +2,7 @@ import explicitMemberAccessibility, {
   ExplicitMemberAccessibilityMessageIds,
   ExplicitMemberAccessibilityOption
 } from '../../src/rules/explicit-member-accessibility';
-import { testRun, testEntity as originTestEntity } from '../utils';
+import { testEntity as originTestEntity, testRun } from '../utils';
 
 const template = `class TestCase {
   {data}
@@ -15,8 +15,6 @@ const testEntity = originTestEntity<
 
 const AllAllowAccessibility = ['public', 'protected', 'private'];
 const NoPublicAllowAccessibility = ['protected', 'private'];
-
-const parameterCases = [];
 
 const feildCases = ['feild:number = 0', 'feild?:number', 'method:()=>{}'];
 
@@ -156,7 +154,33 @@ testRun(explicitMemberAccessibility.name, explicitMemberAccessibility.rule, {
         staticAccessibility: 'no-accessibility',
         fixWith: 'public'
       })
-    )
+    ),
+
+    // ignored names & overrides
+    testEntity('method(){}', { ignoredNames: ['method'] }),
+    testEntity('method(){}', {
+      overrides: {
+        methods: {
+          accessibility: 'explicit',
+          fixWith: 'public',
+          ignoredNames: ['method']
+        }
+      }
+    }),
+    testEntity('constructor(readonly skip: string){}', {
+      overrides: {
+        parameterProperties: {
+          accessibility: 'explicit',
+          fixWith: 'private',
+          ignoredNames: ['skip']
+        }
+      }
+    }),
+    testEntity('#secret = 1'),
+    testEntity('public constructor(){}', {
+      overrides: { constructors: 'off' }
+    }),
+    testEntity('public static method(){}', { staticAccessibility: 'explicit' })
 
     //#endregion
   ],
@@ -299,6 +323,54 @@ testRun(explicitMemberAccessibility.name, explicitMemberAccessibility.rule, {
         'unwantedPublicAccessibility',
         `public ${c}`
       )
+    ),
+
+    // static explicit requirement
+    testEntity(
+      'static method(){}',
+      { staticAccessibility: 'explicit' },
+      'unwantedPublicAccessibility',
+      'public static method(){}'
+    ),
+    testEntity(
+      'protected static method(){}',
+      { staticAccessibility: 'explicit' },
+      'missingAccessibility',
+      'public static method(){}'
+    ),
+
+    // overrides & ignored names
+    testEntity(
+      'public method(){}',
+      { overrides: { methods: 'no-public' } },
+      'missingAccessibility',
+      'method(){}'
+    ),
+    testEntity(
+      'constructor(){}',
+      {
+        overrides: {
+          constructors: {
+            accessibility: 'explicit',
+            fixWith: 'private'
+          }
+        }
+      },
+      'unwantedPublicAccessibility',
+      'private constructor(){}'
+    ),
+    testEntity(
+      'constructor(readonly value: string){}',
+      {
+        overrides: {
+          parameterProperties: {
+            accessibility: 'explicit',
+            fixWith: 'private'
+          }
+        }
+      },
+      'unwantedPublicAccessibility',
+      'constructor(private readonly value: string){}'
     )
 
     //#endregion

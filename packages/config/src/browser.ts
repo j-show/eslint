@@ -1,23 +1,25 @@
-import { TSESLint } from '@typescript-eslint/utils';
+import { Linter } from 'eslint';
+import globals from 'globals';
 
-const config: TSESLint.Linter.Config = {
-  extends: ['jshow/typescript'],
-  parserOptions: {
-    ecmaFeatures: {
+import typescriptConfigs from './typescript';
+import { buildCompat } from './utils';
+
+const legacyConfigs: Linter.Config[] = buildCompat(...typescriptConfigs, {
+  languageOptions: {
+    parserOptions: {
       jsx: true
-    }
+    },
+
+    globals: globals.browser
   },
-  env: {
-    browser: true
-  },
+
   rules: {
     //#region eslint
 
-    'no-alert': 'error',
-    'jsx-a11y/anchor-is-valid': 'off'
+    'no-alert': 'error'
 
     //#endregion
   }
-};
+});
 
-export = config;
+export default legacyConfigs;

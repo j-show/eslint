@@ -1,17 +1,21 @@
+import parser from '@typescript-eslint/parser';
+import { RuleTester } from 'eslint';
 import { TSESLint } from '@typescript-eslint/utils';
-import { flattenDeep } from 'lodash';
+import { flattenDeep } from 'lodash-es';
 import { stripIndent } from 'common-tags';
 
 export const createRuleTester = () => {
-  const parser = require.resolve('@typescript-eslint/parser');
+  const parserOptions: TSESLint.ParserOptions = {
+    ecmaVersion: 2022,
+    ecmaFeatures: { jsx: true },
+    sourceType: 'module',
+    tsconfigRootDir: __dirname
+  };
 
-  const tester = new TSESLint.RuleTester({
-    parser,
-    parserOptions: {
-      ecmaVersion: 2022,
-      ecmaFeatures: { jsx: true },
-      sourceType: 'module',
-      tsconfigRootDir: __dirname
+  const tester = new RuleTester({
+    languageOptions: {
+      parser,
+      parserOptions
     }
   });
 
@@ -19,10 +23,25 @@ export const createRuleTester = () => {
   const to = (code: any) =>
     typeof code === 'string' ? { code, errors: [] } : { errors: [], ...code };
 
+  const dedupeCases = (cases: any[]) => {
+    const seen = new Set<string>();
+    return cases.filter(testCase => {
+      const key = JSON.stringify({
+        code: testCase.code,
+        options: testCase.options,
+        filename: testCase.filename
+      });
+
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
   tester.run = (name, rule, { invalid = [], valid = [] }) =>
     run.call(tester, name, rule, {
-      invalid: flattenDeep(invalid).filter(Boolean).map(to),
-      valid: flattenDeep(valid).filter(Boolean).map(to)
+      invalid: dedupeCases(flattenDeep(invalid).filter(Boolean).map(to)),
+      valid: dedupeCases(flattenDeep(valid).filter(Boolean).map(to))
     });
 
   return tester;
@@ -30,7 +49,10 @@ export const createRuleTester = () => {
 
 export const ruleTester = createRuleTester();
 
-export const testRun = ruleTester.run;
+type AnyRuleRun = (name: string, rule: any, cases: any) => void;
+
+export const testRun: AnyRuleRun = (name, rule, cases) =>
+  (ruleTester as any).run(name, rule, cases);
 
 export const testEntity =
   <M extends string, O>(template: string) =>

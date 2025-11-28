@@ -1,167 +1,126 @@
 <p align="center">
-	<a href="https://jshow.org" target="_blank">
-		<img width="100" src="https://jshow.org/images/jshow.png" alt="jShow logo" />
-	</a>
+  <a href="https://jshow.org" target="_blank">
+    <img width="100" src="https://jshow.org/images/jshow.png" alt="jShow logo" />
+  </a>
 </p>
-<h1 align="center">eslint-plugin-jshow</h1>
 
-[![pro-ci]][pro-travisci]
-[![pro-co]][pro-codecov]
-[![pro-dm]][pro-npm]
-[![pro-ver]][pro-npm]
+<h1 align="center">jshow-eslint</h1>
 
-[![pro-lic]][pro-npm]
-[![pro-ct]][pro-chat]
-
-[pro-github]: https://github.com/j-show/eslint-jshow
-[pro-npm]: https://npmjs.com/package/eslint-plugin-jshow
-[pro-chat]: https://gitter.im/j-show/eslint-plugin-jshow
-[pro-travisci]: https://travis-ci.org/j-show/eslint-plugin-jshow
-[pro-codecov]: https://codecov.io/github/j-show/eslint-plugin-jshow?branch=master
-[pro-issue]: https://github.com/j-show/eslint-plugin-jshow/issues
-
-[pro-ci]: https://img.shields.io/travis/j-show/eslint-plugin-jshow/master.svg
-[pro-co]: https://img.shields.io/codecov/c/github/j-show/eslint-plugin-jshow/master.svg
-[pro-ver]: https://img.shields.io/npm/v/eslint-plugin-jshow.svg
-[pro-lic]: https://img.shields.io/npm/l/eslint-plugin-jshow.svg
-[pro-dm]: https://img.shields.io/npm/dm/eslint-plugin-jshow.svg
-[pro-ct]: https://img.shields.io/gitter/room/j-show/eslint-plugin-jshow.svg
+<p align="center">
+  English | <a href="./README_CN.md">简体中文</a>
+</p>
 
 ---
 
-# Supporting
+## Overview
 
-jShow is an MIT-Licensed open source project with its ongoing development made possible entirely by the support of these awesome [backers](https://github.com/j-show/jShow/blob/master/BACKERS.md). If you'd like to join them, please consider:
+`jshow-eslint` is the official ESLint monorepo maintained by the jShow team. It ships:
 
-- [Become a backer or sponsor on Patreon](https://www.patreon.com/jshow).
-- [Become a backer or sponsor on Open Collective](https://opencollective.com/jshow).
+- `eslint-config-jshow`: a heavily curated Flat Config preset with custom plugins and runtime-specific flavors.
+- `eslint-plugin-jshow`: companion rules that enforce explicit member accessibility, deterministic import/export ordering, and aggressive unused-code cleanup.
+- `examples/react` & `examples/vue`: real projects that showcase and regression-test every preset.
 
-### What's the difference between Patreon and OpenCollective?
-
-Funds donated via Patreon go directly to support [eslint-plugin-jshow][pro-github] You's full-time work on jShow. Funds donated via OpenCollective are managed with transparent expenses and will be used for compensating work and expenses for core team members or sponsoring community events. Your name/logo will receive proper recognition and exposure by donating on either platform.
-
----
-
-# Rules Details
-
-## explicit-member-accessibility
-
-External eslint build-in rule (explicit-member-accessibility), allow custom accessibility with fix error code
-
-** default rule options **
-
-```json
-{
-	"plugins": ["jshow"],
-	"rules": {
-		"jshow/explicit-member-accessibility": [
-			"error",
-			{
-				"accessibility": "explicit",
-				"staticAccessibility": "no-accessibility",
-				"fixWith": "protected",
-				"overrides": {
-					"constructors": "no-public"
-				}
-			}
-		]
-	}
-}
-```
-
-- `accessibility`: Set whether to detect accessibility for properties / fields / methods / constructors / parameter properties.
-
-	```ts
-	enum Accessibility {
-		// off explicit
-		"off",
-		// [default] explicit accessibility
-		"explicit",
-		// explicit accessibility and remove public accessibility
-		"no-public"
-	}
-	```
-
-- `staticAccessibility`: Set whether to detect accessibility for static properties
-
-	```ts
-	enum StaticAccessibility {
-		// off explicit
-		"off",
-		// explicit accessibility
-		"explicit",
-		// [default] explicit accessibility and remove accessibility,
-		"no-accessibility"
-	}
-	```
-
-- `fixWith`: When accessibility is empty, use [fixWith] filled
-
-	```ts
-	enum FixWith {
-		"private",
-		"protected", // [default]
-		"public"
-	}
-	```
-
-- `ignoredNames`: When explicit accessibility is error, ignore these names
-
-- `overrides`: Override default accessibility for specific names
-
-	- Specific names:
-		- `constructors`: Override accessibility for constructors, default is `no-public`
-		- `parameterProperties`: Override accessibility for parameter properties, default is `explicit` and `fixWith` is `public`
-		- `properties`: Override accessibility for properties / fields, default is `off`
-		- `accessors`: Override accessibility for accessors, default is `explicit`
-		- `methods`: Override accessibility for methods, default is `explicit`
-
-	- Allows simple configuration, just like `accessibility`.
-
-	- Advanced usage has the following options:
-
-		```ts
-		{
-			accessibility: 'explicit';
-			fixWith: AccessibilityFixWith;
-			ignoredNames?: string[];
-		}
-		// or
-		{
-			accessibility: 'no-public';
-			ignoredNames?: string[];
-		}
-		```
+The repository is managed with PNPM workspaces and builds through Vite-powered scripts that emit distributable artifacts into `dist/`.
 
 ---
 
-# Folder
+## Package Highlights
+
+| Package | Description |
+| --- | --- |
+| [`packages/config`](./packages/config) | Flat Config entry point with TypeScript, Browser, Node, React, and Vue presets. Automatically wires `eslint-plugin-jshow`, Prettier alignment, the in-house `jshow/sort-import` / `jshow/sort-export` rules, and unused import/variable policies. |
+| [`packages/rule`](./packages/rule) | Custom ESLint plugin that provides `explicit-member-accessibility`, `sort-export`, `sort-import`, `unused-import`, and `unused-variable`, each with safe autofixers. |
+
+---
+
+## Why jshow-eslint?
+
+- **Battle-tested defaults** – Extends `@eslint/js`, `@typescript-eslint`, and Prettier recommendations plus jShow's internal conventions.
+- **Multi-runtime coverage** – One dependency configures browser, Node.js, React, and Vue projects while keeping naming plus import/export order consistent.
+- **Plugin included** – `eslint-plugin-jshow` is bundled automatically, so consumers don't manage extra dependencies or versions.
+- **Example-driven** – The React/Vue demos run in CI to validate every release of the presets.
+- **Modern tooling** – Built for ESLint 9 Flat Config and powered by `FlatCompat` for smooth interop with legacy plugins.
+
+---
+
+## Quick Start
+
+1. **Install dependencies**
+
+   ```bash
+   pnpm add -D eslint eslint-config-jshow eslint-plugin-jshow
+   ```
+
+2. **Create `eslint.config.js`**
+
+   ```js
+   import reactConfig from 'eslint-config-jshow/react';
+
+   export default [...reactConfig];
+   ```
+
+   Swap `react` with `browser`, `node`, `vue`, or omit the suffix to use the base TypeScript preset.
+
+3. **Run ESLint**
+
+   ```bash
+   pnpm exec eslint . --report-unused-disable-directives --max-warnings=0
+   ```
+
+---
+
+## Repository Scripts
+
+| Command | Description |
+| --- | --- |
+| `pnpm build` | Cleans previous outputs then builds `eslint-plugin-jshow` and `eslint-config-jshow` sequentially. |
+| `pnpm build:rule` / `pnpm build:config` | Runs `vite build` inside the selected package and writes bundles to `packages/*/dist`. |
+| `pnpm test:rule` | Executes the Vitest-based RuleTester suite for the plugin. |
+| `pnpm test:react` / `pnpm test:vue` | Lints the example applications end-to-end. |
+| `pnpm preview:react` / `pnpm preview:vue` | Launches the Vite dev servers for manual validation. |
+
+---
+
+## Examples
+
+- `examples/react` – A Tic-Tac-Toe style React + TypeScript app that stresses JSX, hooks, and component patterns.
+- `examples/vue` – A Vue 3 `<script setup>` demo that validates composition-API behavior and Vue-specific globals.
+
+Both demos consume the local build artifacts; run `pnpm preview:*` for manual testing or `pnpm test:*` to lint inside CI.
+
+---
+
+## Development Workflow
+
+1. `pnpm install`
+2. Modify sources under `packages/config` or `packages/rule`.
+3. `pnpm build` to refresh distributable outputs.
+4. `pnpm test:rule` plus `pnpm test:react` / `pnpm test:vue` to validate the rules and presets.
+5. Use the example apps for additional reproduction cases before publishing.
+
+---
+
+## Directory Layout
 
 ```
-──
- └── dist            // output folder
- └── src             // source folder
- │ └── index.js      // main script file
- │ └── rules         // eslint rules folder
- └── test            // mocha test folder
+├── packages/
+│   ├── config/   # eslint-config-jshow sources
+│   └── rule/     # eslint-plugin-jshow sources
+├── scripts/      # Shared build utilities
+├── examples/     # React/Vue demos
+├── dist/         # Build outputs (gitignored)
+├── eslint.config.js
+├── pnpm-workspace.yaml
+└── ...
 ```
 
 ---
 
-``
+## License
+
+[MIT](./LICENSE) © jShow
 
 ---
 
-# Questions
+Questions or issues? Open an issue at <https://github.com/j-show/eslint/issues>.
 
-The [issue](https://github.com/j-show/eslint-plugin-jshow/issues) list of this repo is **exclusively** for bug reports and feature requests.
-
----
-
-# License
-
-[MIT](http://opensource.org/licenses/MIT)
-
----
-
-**Copyright (c) 2022 jShow.org**

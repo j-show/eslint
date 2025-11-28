@@ -1,0 +1,80 @@
+# ======================================================
+# .cursorrules – TypeScript 项目专用
+# 放入仓库根目录即可生效
+# ======================================================
+
+# 1. 语言与运行时
+language: typescript
+
+# 2. 编译与打包
+build_tool: vite
+module_system: esm + cjs
+target: esnext
+strict: true
+skipLibCheck: true
+declaration: true
+sourceMap: true
+
+# 3. 目录惯例（src 内高内聚）
+structure:
+  - src/
+  - tests/          # 与 src 一一对应的 *.test.ts
+  - e2e/            # 端到端套件，独立启动数据库与容器
+
+# 5. 命名惯例
+naming:
+  file: kebab-case
+  type: PascalCase
+  interface: PascalCase 前缀 I（例：IUserRepo）
+  enum: PascalCase 后缀 Enum（例：OrderStatusEnum）
+  function: camelCase
+  constant: UPPER_SNAKE_CASE
+  private_field: leadingUnderscore
+
+# 6. 单元测试风格
+test:
+  framework: vitest
+  mock: vitest
+  coverage_threshold: 80
+  prefer: each pure function 必须配套单元测试
+  avoid: 不测实现细节，只测行为与 public API
+
+# 7. Git 提交规范
+commit: conventional-commits
+types:
+  - feat
+  - fix
+  - docs
+  - refactor
+  - test
+  - chore
+  - perf
+  - build
+
+# 8. 安全与性能
+security:
+  - 禁止在代码中硬编码密钥
+
+performance:
+  - 优先使用结构化并发（Promise.all + AbortController）
+  - 避免在热路径实例化临时对象
+  - 大于 1 kB 的 JSON 响应启用 gzip
+
+# 9. 文档与注释
+docs:
+  - 所有函数必须带 TSDoc
+  - 复杂业务逻辑写「为什么」而非「做什么」注释
+  - README 必须给出本地启动、测试、环境变量三段示例
+
+# 10. Cursor 行为偏好
+cursor:
+  auto_import: true
+  suggest_snippet: true
+  exclude_dirs:
+    - node_modules
+    - dist
+    - .git
+    - coverage
+    - .wrangler
+  chat_language: zh-CN
+  max_tokens: 4000
