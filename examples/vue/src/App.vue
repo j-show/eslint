@@ -11,7 +11,7 @@
       <ol>
         <li v-for="(_, idx) in history" :key="`l-${idx}`">
           <button @click="jumpTo(idx)">
-            Go to {{ idx > 0 ? `move #${idx}` : "game start" }}
+            Go to {{ idx > 0 ? `move #${idx}` : 'game start' }}
           </button>
         </li>
       </ol>
@@ -20,10 +20,11 @@
 </template>
 
 <script lang="ts" setup>
-import Board from "./board.vue";
-import { computed, ref, toRaw } from "vue";
+import { computed, ref } from 'vue';
 
-const history = ref<string[][]>([Array(9).fill("")]);
+import Board from './board.vue';
+
+const history = ref<string[][]>([[...Array(9).fill('')]] as string[][]);
 const currentMove = ref(0);
 
 const xIsNext = computed(() => currentMove.value % 2 === 0);
@@ -36,7 +37,7 @@ const jumpTo = (step: number) => {
 const handlePlay = (nextSquares: string[]) => {
   const nextHistory = [
     ...history.value.slice(0, currentMove.value + 1),
-    nextSquares,
+    nextSquares
   ];
 
   history.value = nextHistory;

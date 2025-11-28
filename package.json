@@ -15,39 +15,50 @@
     "packages/*"
   ],
   "engines": {
-    "pnpm": ">=8"
+    "pnpm": ">=10"
   },
   "scripts": {
     "prepare": "husky install",
     "precommit": "lint-staged",
     "clean": "rm -rf ./dist && rm -rf ./packages/**/dist",
-    "build": "npm run clean && npm run build:rule && npm run build:config",
-    "build:config": "ts-node -P ./scripts/tsconfig.json -T ./scripts/build/config",
-    "build:rule": "ts-node -P ./scripts/tsconfig.json -T ./scripts/build/rule",
-    "test:rule": "npm run test --workspace=rule",
-    "test:react": "cd examples/react && npm run test",
-    "test:vue": "cd examples/vue && npm run test",
-    "preview:react": "cd examples/react && npm run preview",
-    "preview:vue": "cd examples/vue && npm run preview"
+    "build": "pnpm clean && pnpm build:rule && pnpm build:config",
+    "build:config": "pnpm -F eslint-config-jshow build",
+    "build:rule": "pnpm -F eslint-plugin-jshow build",
+    "test": "pnpm test:rule && pnpm test:react && pnpm test:vue",
+    "test:rule": "pnpm -F eslint-plugin-jshow test --run",
+    "test:react": "cd examples/react && pnpm test",
+    "test:vue": "cd examples/vue && pnpm test",
+    "preview:react": "cd examples/react && pnpm preview",
+    "preview:vue": "cd examples/vue && pnpm preview"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^20.11.5",
     "chalk": "^4.1.0",
+    "eslint": "^9",
+    "eslint-config-jshow": "workspace:*",
+    "eslint-config-prettier": "latest",
+    "eslint-plugin-jshow": "workspace:*",
+    "eslint-plugin-prettier": "latest",
+    "eslint-plugin-react": "latest",
+    "eslint-plugin-react-hooks": "latest",
+    "eslint-plugin-vue": "latest",
     "execa": "^4.0.2",
     "fs-extra": "^11.2.0",
     "husky": "latest",
     "lint-staged": "latest",
     "prettier": ">=3",
-    "ts-node": "^10.9.2",
-    "tslib": "^2.6.2",
-    "typescript": "^5.3.3"
+    "semver": "^7.7.3",
+    "typescript": "^5",
+    "vite": "^7",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^4"
   },
-  "peerDependencies": {
-    "eslint-config-jshow": "./dist/eslint-config-jshow",
-    "eslint-plugin-jshow": "./dist/eslint-plugin-jshow",
-    "eslint-config-prettier": "latest",
-    "eslint-plugin-prettier": "latest",
-    "eslint-plugin-simple-import-sort": "latest"
+  "pnpm": {
+    "overrides": {
+      "@types/node": "^20.11.5",
+      "typescript-eslint": "^8",
+      "eslint": "^9",
+      "eslint-plugin-jshow": "workspace:*"
+    }
   }
 }

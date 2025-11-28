@@ -26,6 +26,9 @@ testRun(unusedVariable.name, unusedVariable.rule, {
     {
       code: 'const [ a, b ] = []; console.log(a);',
       options: [{ autoFix: 'off', ignoredNames: ['b'] }]
+    },
+    {
+      code: 'export const shouldSkip = 1;'
     }
   ],
   invalid: [
@@ -85,6 +88,11 @@ testRun(unusedVariable.name, unusedVariable.rule, {
       output: '',
       errors: [{ messageId: 'unusedAllVariable' }],
       options: [{ autoFix: 'always', ignoredNames: [] }]
+    },
+    {
+      code: 'const ignored = 1;',
+      options: [{ autoFix: 'off', ignoredNames: [] }],
+      errors: [{ messageId: 'unusedSingleVariable' }]
     },
     {
       code: 'let [ a, b ] = func();',

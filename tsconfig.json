@@ -22,5 +22,6 @@
     "isolatedModules": true,
     "exactOptionalPropertyTypes": true,
     "allowSyntheticDefaultImports": true
-  }
+  },
+  "include": ["./global.d.ts"]
 }

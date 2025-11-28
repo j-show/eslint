@@ -1,41 +1,54 @@
-import { TSESLint } from '@typescript-eslint/utils';
+import typescriptParser from '@typescript-eslint/parser';
+import { Linter } from 'eslint';
+import pluginVue from 'eslint-plugin-vue';
+import globals from 'globals';
+import vueParser from 'vue-eslint-parser';
 
-const config: TSESLint.Linter.Config = {
-  extends: ['jshow/browser', 'plugin:vue/vue3-recommended'],
-  plugins: ['vue'],
-  parser: 'vue-eslint-parser',
-  globals: {
-    defineProps: true,
-    defineEmits: true,
-    defineExpose: true,
-    withDefaults: true
-  },
-  overrides: [
-    {
-      files: ['*.vue'],
-      rules: {
-        '@typescript-eslint/no-unused-vars': 'off',
+import browserConfigs from './browser';
+import { buildCompat } from './utils';
 
-        'simple-import-sort/imports': [
-          'error',
-          {
-            groups: [
-              ['\\u0000'],
-              ['vue', '^@?[a-zA-Z]'],
-              ['^@/'],
-              ['^\\.\\./'],
-              ['^\\./']
-            ]
-          }
-        ],
+const vueRecommendeds = pluginVue.configs[
+  'flat/recommended'
+] as unknown as Linter.Config[];
 
-        'vue/v-on-event-hyphenation': 'off',
-        'vue/multi-word-component-names': ['warn'],
-        'vue/component-api-style': ['error', ['script-setup', 'composition']],
-        'vue/no-unused-components': ['off', { ignoreWhenBindingPresent: true }]
-      }
+const legacyConfigs: Linter.Config[] = buildCompat(
+  ...browserConfigs,
+  ...vueRecommendeds,
+  {
+    files: ['**/*.vue'],
+    plugins: { vue: pluginVue },
+    languageOptions: {
+      parser: vueParser,
+      parserOptions: {
+        parser: typescriptParser,
+        extraFileExtensions: ['.vue']
+      },
+
+      globals: globals.vue
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'off',
+
+      'jshow/sort-import': [
+        'error',
+        {
+          groups: [
+            ['^node:'],
+            ['\\u0000'],
+            ['^vue', '^@?[a-zA-Z]'],
+            ['^@/'],
+            ['^\\.\\./'],
+            ['^\\./']
+          ]
+        }
+      ],
+
+      'vue/v-on-event-hyphenation': 'off',
+      'vue/multi-word-component-names': ['warn'],
+      'vue/component-api-style': ['error', ['script-setup', 'composition']],
+      'vue/no-unused-components': ['off', { ignoreWhenBindingPresent: true }]
     }
-  ]
-};
+  }
+);
 
-export = config;
+export default legacyConfigs;

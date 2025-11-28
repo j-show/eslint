@@ -1,25 +1,25 @@
 {
   "name": "vue",
   "version": "0.0.0",
+  "type": "module",
   "scripts": {
     "preview": "vite",
-    "test": "eslint . --ext .ts,.tsx,.js, --report-unused-disable-directives --max-warnings 0"
+    "test": "eslint . --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
     "vue": "^3.4.18"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",
-    "vite": "^5.1.1",
-    "vue-tsc": "^1.8.27",
-    "eslint": "^8",
-    "typescript-eslint": "latest",
+    "vite": "^7",
+    "vue-tsc": "^3.1.5",
+    "eslint": "^9",
+    "typescript-eslint": "^8",
     "eslint-config-prettier": "latest",
     "eslint-plugin-prettier": "latest",
-    "eslint-plugin-simple-import-sort": "latest",
     "eslint-plugin-vue": "latest",
     "vue-eslint-parser": "latest",
-    "eslint-config-jshow": "../../dist/eslint-config-jshow",
-    "eslint-plugin-jshow": "../../dist/eslint-plugin-jshow"
+    "eslint-config-jshow": "workspace:*",
+    "eslint-plugin-jshow": "workspace:*"
   }
 }

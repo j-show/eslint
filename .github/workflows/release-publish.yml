@@ -1,0 +1,202 @@
+name: Release And Publish
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  check-commit:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - name: Checkout code
+        if: github.event_name != 'workflow_dispatch'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check commit message and author
+        if: github.event_name != 'workflow_dispatch'
+        id: check
+        run: |
+          # Get the latest commit message and author email
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          COMMIT_AUTHOR_EMAIL=$(git log -1 --pretty=%ae)
+          
+          echo "Commit message: $COMMIT_MSG"
+          echo "Commit author email: $COMMIT_AUTHOR_EMAIL"
+          
+          # Check if commit message starts with "chore: upgrade packages version"
+          if [[ "$COMMIT_MSG" == "chore: upgrade packages version"* ]]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "Matched: commit message starts with 'chore: upgrade packages version'"
+            exit 0
+          fi
+          
+          # Check if commit author is dev@jshow.org
+          if [ "$COMMIT_AUTHOR_EMAIL" == "dev@jshow.org" ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "Matched: commit author is dev@jshow.org"
+            exit 0
+          fi
+          
+          echo "should_run=false" >> $GITHUB_OUTPUT
+          echo "Skipping CI: commit message does not start with 'chore: upgrade packages version' and author is not dev@jshow.org"
+
+  build-publish:
+    runs-on: ubuntu-latest
+    needs: check-commit
+    if: needs.check-commit.outputs.should_run != 'false'
+    permissions:
+      contents: write
+    outputs:
+      check_config: ${{ steps.check_config.outputs.modified }}
+      check_rule: ${{ steps.check_rule.outputs.modified }}
+      config_version: ${{ steps.build_config.outputs.version }}
+      rule_version: ${{ steps.build_rule.outputs.version }}
+      config_published: ${{ steps.build_config.outputs.version != '' }}
+      rule_published: ${{ steps.build_rule.outputs.version != '' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+          cache: 'pnpm'
+
+      - name: Get last commit
+        id: last_commit
+        run: |
+          if git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+            echo "sha=$(git rev-parse HEAD~1)" >> $GITHUB_OUTPUT
+          else
+            echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          fi
+
+      # ========================================
+
+      - name: Check for changes in packages/rule
+        id: check_rule
+        run: |
+          COUNT=$(git diff --name-only ${{ steps.last_commit.outputs.sha }} ${{ github.sha }} -- packages/rule 2>/dev/null | wc -l | tr -d ' ')
+          echo "modified=$COUNT" >> $GITHUB_OUTPUT
+
+      - name: Check for changes in packages/config
+        id: check_config
+        run: |
+          COUNT=$(git diff --name-only ${{ steps.last_commit.outputs.sha }} ${{ github.sha }} -- packages/config 2>/dev/null | wc -l | tr -d ' ')
+          echo "modified=$COUNT" >> $GITHUB_OUTPUT
+
+      # ========================================
+
+      - name: Install Dependencies & Cleanup dist
+        if: steps.check_config.outputs.modified != '0' || steps.check_rule.outputs.modified != '0'
+        run: |
+          rm -rf ./.npmrc
+          pnpm install
+          pnpm run clean
+
+      # ========================================
+
+      - name: Build packages/rule
+        if: steps.check_rule.outputs.modified != '0'
+        id: build_rule
+        run: |
+          cd packages/rule
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          cd ../..
+          pnpm run build:rule
+
+      - name: Publish eslint-plugin-jshow
+        if: steps.check_rule.outputs.modified != '0'
+        id: publish_rule
+        run: |
+          cd packages/rule
+          pnpm publish --no-git-checks --access public
+          echo "published=true" >> $GITHUB_OUTPUT
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # ========================================
+
+      - name: Build packages/config
+        if: steps.check_config.outputs.modified != '0'
+        id: build_config
+        run: |
+          cd packages/config
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          cd ../..
+          pnpm run build:config
+
+      - name: Publish eslint-config-jshow
+        if: steps.check_config.outputs.modified != '0'
+        id: publish_config
+        run: |
+          cd packages/config
+          pnpm publish --no-git-checks --access public
+          echo "published=true" >> $GITHUB_OUTPUT
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # ========================================
+
+      - name: Prepare Release Info
+        if: (needs.build-packages.outputs.config_published == 'true' || needs.build-packages.outputs.rule_published == 'true')
+        id: release_info
+        run: |
+          RELEASE_TAG=""
+          RELEASE_NAME=""
+          RELEASE_BODY="## 📦 Published Packages\n\n"
+          
+          if [ "${{ needs.build-packages.outputs.config_version }}" != "" ]; then
+            RELEASE_BODY="$RELEASE_BODY- **eslint-config-jshow**: v${{ needs.build-packages.outputs.config_version }}\n"
+            if [ -z "$RELEASE_TAG" ]; then
+              RELEASE_TAG="eslint-config-jshow@${{ needs.build-packages.outputs.config_version }}"
+            fi
+          fi
+          
+          if [ "${{ needs.build-packages.outputs.rule_version }}" != "" ]; then
+            RELEASE_BODY="$RELEASE_BODY- **eslint-plugin-jshow**: v${{ needs.build-packages.outputs.rule_version }}\n"
+            if [ -z "$RELEASE_TAG" ]; then
+              RELEASE_TAG="eslint-plugin-jshow@${{ needs.build-packages.outputs.rule_version }}"
+            elif [ "${{ needs.build-packages.outputs.config_version }}" != "" ]; then
+              RELEASE_TAG="packages@${{ needs.build-packages.outputs.config_version }}+${{ needs.build-packages.outputs.rule_version }}"
+            fi
+          fi
+          
+          RELEASE_BODY="$RELEASE_BODY\n## 📝 Changes\n\nSee commit history for details."
+          RELEASE_NAME="$RELEASE_TAG"
+          
+          echo "tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+          echo "name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$RELEASE_BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        if: (needs.build-packages.outputs.config_published == 'true' || needs.build-packages.outputs.rule_published == 'true')
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.release_info.outputs.tag }}
+          name: ${{ steps.release_info.outputs.name }}
+          body: ${{ steps.release_info.outputs.body }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
