@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-jshow",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "ESLint plugin for jshow",
   "keywords": [
     "eslint",
@@ -20,11 +20,6 @@
       "require": "./dist/index.cjs"
     }
   },
-  "scripts": {
-    "test": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "build": "vite build"
-  },
   "peerDependencies": {
     "eslint": "^9",
     "typescript-eslint": "^8"
@@ -36,11 +31,13 @@
     "@typescript-eslint/types": "^8",
     "@typescript-eslint/utils": "^8"
   },
-  "devDependencies": {
-    "@types/common-tags": "^1.8.2",
-    "@types/node": "*",
-    "@vitest/coverage-v8": "4.0.14",
-    "common-tags": "^1.8.2",
-    "lodash-es": "^4.17.21"
+  "license": "MIT",
+  "homepage": "https://github.com/j-show/eslint",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/j-show/eslint.git"
+  },
+  "bugs": {
+    "url": "https://github.com/j-show/eslint/issues"
   }
 }

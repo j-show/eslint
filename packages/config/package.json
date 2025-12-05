@@ -1,6 +1,6 @@
 {
   "name": "eslint-config-jshow",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "ESLint config for jshow",
   "keywords": [
     "eslint",
@@ -45,9 +45,6 @@
       "require": "./dist/vue.cjs"
     }
   },
-  "scripts": {
-    "build": "vite build"
-  },
   "peerDependencies": {
     "eslint": "^9",
     "typescript-eslint": "^8"
@@ -57,7 +54,7 @@
     "@typescript-eslint/eslint-plugin": "^8",
     "@typescript-eslint/parser": "^8",
     "eslint": "^9",
-    "eslint-plugin-jshow": "1.0.9",
+    "eslint-plugin-jshow": "1.0.10",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-vue": "^10.6.2",
@@ -65,8 +62,13 @@
     "typescript-eslint": "^8",
     "vue-eslint-parser": "^10.2.0"
   },
-  "devDependencies": {
-    "@types/node": "*",
-    "rollup": "^4.53.3"
+  "license": "MIT",
+  "homepage": "https://github.com/j-show/eslint",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/j-show/eslint.git"
+  },
+  "bugs": {
+    "url": "https://github.com/j-show/eslint/issues"
   }
 }
