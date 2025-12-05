@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'packages/rule/package.json'
+      - 'packages/config/package.json'
 
 jobs:
   check-commit:
@@ -25,31 +28,31 @@ jobs:
           # Get the latest commit message and author email
           COMMIT_MSG=$(git log -1 --pretty=%B)
           COMMIT_AUTHOR_EMAIL=$(git log -1 --pretty=%ae)
-          
+
           echo "Commit message: $COMMIT_MSG"
           echo "Commit author email: $COMMIT_AUTHOR_EMAIL"
-          
+
           # Check if commit message starts with "chore: upgrade packages version"
           if [[ "$COMMIT_MSG" == "chore: upgrade packages version"* ]]; then
             echo "should_run=true" >> $GITHUB_OUTPUT
             echo "Matched: commit message starts with 'chore: upgrade packages version'"
             exit 0
           fi
-          
+
           # Check if commit author is dev@jshow.org
-          if [ "$COMMIT_AUTHOR_EMAIL" == "dev@jshow.org" ]; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
+          if [ "$COMMIT_AUTHOR_EMAIL" != "dev@jshow.org" ]; then
+            echo "should_run=false" >> $GITHUB_OUTPUT
             echo "Matched: commit author is dev@jshow.org"
             exit 0
           fi
-          
+
           echo "should_run=false" >> $GITHUB_OUTPUT
           echo "Skipping CI: commit message does not start with 'chore: upgrade packages version' and author is not dev@jshow.org"
 
   build-publish:
     runs-on: ubuntu-latest
     needs: check-commit
-    if: needs.check-commit.outputs.should_run != 'false'
+    if: needs.check-commit.outputs.should_run == 'true'
     permissions:
       contents: write
     outputs:
@@ -75,8 +78,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          registry-url: https://registry.npmjs.org/
+          registry-url: 'https://registry.npmjs.org/'
           cache: 'pnpm'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Get last commit
         id: last_commit
@@ -108,7 +113,7 @@ jobs:
         run: |
           rm -rf ./.npmrc
           pnpm install --no-frozen-lockfile
-          pnpm run clean
+          pnpm clean
 
       # ========================================
 
@@ -116,21 +121,19 @@ jobs:
         if: steps.check_rule.outputs.modified != '0'
         id: build_rule
         run: |
-          cd packages/rule
-          VERSION=$(node -p "require('./package.json').version")
+          node ./scripts/npm-publish.js -p rule
+          VERSION=$(node -p "require('./packages/rule/package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          cd ../..
-          pnpm run build:rule
+          pnpm build:rule
 
       - name: Publish eslint-plugin-jshow
         if: steps.check_rule.outputs.modified != '0'
         id: publish_rule
         run: |
           cd packages/rule
-          pnpm publish --no-git-checks --access public
+          npm publish --no-git-checks --access public
           echo "published=true" >> $GITHUB_OUTPUT
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          cd ../..
 
       # ========================================
 
@@ -138,21 +141,19 @@ jobs:
         if: steps.check_config.outputs.modified != '0'
         id: build_config
         run: |
-          cd packages/config
-          VERSION=$(node -p "require('./package.json').version")
+          node ./scripts/npm-publish.js -p config
+          VERSION=$(node -p "require('./packages/config/package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          cd ../..
-          pnpm run build:config
+          pnpm build:config
 
       - name: Publish eslint-config-jshow
         if: steps.check_config.outputs.modified != '0'
         id: publish_config
         run: |
           cd packages/config
-          pnpm publish --no-git-checks --access public
+          npm publish --no-git-checks --access public
           echo "published=true" >> $GITHUB_OUTPUT
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          cd ../..
 
   release-publish:
     runs-on: ubuntu-latest
@@ -167,26 +168,26 @@ jobs:
           RELEASE_TAG=""
           RELEASE_NAME=""
           RELEASE_BODY="## 📦 Published Packages\n\n"
-          
+
           if [ "${{ needs.build-publish.outputs.config_version }}" != "" ]; then
             RELEASE_BODY="$RELEASE_BODY- **eslint-config-jshow**: v${{ needs.build-publish.outputs.config_version }}\n"
             if [ -z "$RELEASE_TAG" ]; then
-              RELEASE_TAG="eslint-config-jshow@${{ needs.build-publish.outputs.config_version }}"
+              RELEASE_TAG="eslint-config-jshow-v${{ needs.build-publish.outputs.config_version }}"
             fi
           fi
-          
+
           if [ "${{ needs.build-publish.outputs.rule_version }}" != "" ]; then
             RELEASE_BODY="$RELEASE_BODY- **eslint-plugin-jshow**: v${{ needs.build-publish.outputs.rule_version }}\n"
             if [ -z "$RELEASE_TAG" ]; then
-              RELEASE_TAG="eslint-plugin-jshow@${{ needs.build-publish.outputs.rule_version }}"
+              RELEASE_TAG="eslint-plugin-jshow-v${{ needs.build-publish.outputs.rule_version }}"
             elif [ "${{ needs.build-publish.outputs.config_version }}" != "" ]; then
-              RELEASE_TAG="packages@${{ needs.build-publish.outputs.config_version }}+${{ needs.build-publish.outputs.rule_version }}"
+              RELEASE_TAG="jshow-eslint-v${{ needs.build-publish.outputs.config_version }}-v${{ needs.build-publish.outputs.rule_version }}"
             fi
           fi
-          
+
           RELEASE_BODY="$RELEASE_BODY\n## 📝 Changes\n\nSee commit history for details."
           RELEASE_NAME="$RELEASE_TAG"
-          
+
           echo "tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
           echo "name=$RELEASE_NAME" >> $GITHUB_OUTPUT
           echo "body<<EOF" >> $GITHUB_OUTPUT

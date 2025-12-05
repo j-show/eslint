@@ -1,7 +1,7 @@
 {
   "name": "jshow-eslint",
-  "license": "MIT",
   "description": "ESLint for jShow",
+  "license": "MIT",
   "homepage": "https://github.com/j-show/eslint",
   "repository": {
     "type": "git",

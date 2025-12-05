@@ -141,23 +141,25 @@ jobs:
           rm -rf ./.npmrc
           pnpm install --no-frozen-lockfile
 
+      # ========================================
+
       - name: Upgrade packages/rule version
         if: github.event_name == 'workflow_dispatch' || needs.check-label.outputs.release_rule == 'true'
         id: upgrade_rule
         run: |
           node ./scripts/upgrade-version.js -p rule
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION=$(node -p "require('./packages/rule/package.json').version")
+          echo "$VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          cd ../..
 
       - name: Upgrade packages/config version
         if: github.event_name == 'workflow_dispatch' || needs.check-label.outputs.release_config == 'true'
         id: upgrade_config
         run: |
           node ./scripts/upgrade-version.js -p config
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION=$(node -p "require('./packages/config/package.json').version")
+          echo "$VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          cd ../..
 
       - name: Build commit message
         id: commit_msg
@@ -170,6 +172,7 @@ jobs:
             COMMIT_MSG="$COMMIT_MSG\n- eslint-plugin-jshow ${{ steps.upgrade_rule.outputs.version }}"
           fi
           echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          echo "$COMMIT_MSG"
 
       - name: Commit and push version changes
         if: steps.upgrade_config.outputs.version != '' || steps.upgrade_rule.outputs.version != ''

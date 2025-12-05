@@ -200,9 +200,6 @@ importers:
       '@types/node':
         specifier: ^20.11.5
         version: 20.11.5
-      rollup:
-        specifier: ^4.53.3
-        version: 4.53.3
 
   packages/rule:
     dependencies:

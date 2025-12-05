@@ -2,7 +2,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const semver = require('semver');
 
 const readPackageJson = fn => {
   try {
@@ -26,8 +25,7 @@ const writePackageJson = (fn, json) => {
 
 const options = (() => {
   const options = {
-    package: '',
-    version: ''
+    package: ''
   };
 
   const args = process.argv.slice(2);
@@ -38,32 +36,10 @@ const options = (() => {
       i++;
       continue;
     }
-
-    if (args[i] === '-v' && i + 1 < args.length) {
-      options.version = args[i + 1];
-      i++;
-      continue;
-    }
   }
 
   return options;
 })();
-
-// 验证 -p 参数
-if (!options.package) {
-  console.error('错误: 缺少 -p 参数');
-  console.error(
-    '用法: node upgrade-version.js -p <config|rule> [-v <version>]'
-  );
-  process.exit(1);
-}
-
-if (options.package !== 'config' && options.package !== 'rule') {
-  console.error(
-    `错误: -p 参数值必须是 "config" 或 "rule"，当前值: ${options.package}`
-  );
-  process.exit(1);
-}
 
 // 构建 package.json 路径
 const packageJsonPath = path.join(
@@ -79,21 +55,33 @@ if (!packageJson) {
   process.exit(1);
 }
 
-// 获取当前版本
-const currentVersion = packageJson.version;
-if (!currentVersion) {
-  console.error('错误: package.json 中未找到 version 字段');
+const rootPackageJson = readPackageJson(
+  path.join(__dirname, '../package.json')
+);
+if (!rootPackageJson) {
+  console.error('错误: 无法读取 root package.json');
   process.exit(1);
 }
 
-// 确定新版本
-const newVersion = options.version || semver.inc(currentVersion, 'patch');
+packageJson.license = rootPackageJson.license;
+packageJson.homepage = rootPackageJson.homepage;
+packageJson.repository = rootPackageJson.repository;
+packageJson.bugs = rootPackageJson.bugs;
 
-// 更新版本
-packageJson.version = newVersion;
+delete packageJson.devDependencies;
+
+if (options.package === 'config') {
+  const rulePackageJson = readPackageJson(
+    path.join(__dirname, '../packages/rule/package.json')
+  );
+
+  if (!rulePackageJson) {
+    console.error('错误: 无法读取 rule package.json');
+    process.exit(1);
+  }
+
+  packageJson.dependencies['eslint-plugin-jshow'] = rulePackageJson.version;
+}
 
 // 写入文件
 writePackageJson(packageJsonPath, packageJson);
-console.log(
-  `✓ 版本已更新: ${options.package} ${currentVersion} -> ${newVersion}`
-);
