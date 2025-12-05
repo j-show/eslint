@@ -107,7 +107,7 @@ jobs:
         if: steps.check_config.outputs.modified != '0' || steps.check_rule.outputs.modified != '0'
         run: |
           rm -rf ./.npmrc
-          pnpm install
+          pnpm install --no-frozen-lockfile
           pnpm run clean
 
       # ========================================
@@ -154,29 +154,33 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      # ========================================
-
+  release-publish:
+    runs-on: ubuntu-latest
+    needs: build-publish
+    if: needs.build-publish.outputs.config_published == 'true' || needs.build-publish.outputs.rule_published == 'true'
+    permissions:
+      contents: write
+    steps:
       - name: Prepare Release Info
-        if: (needs.build-packages.outputs.config_published == 'true' || needs.build-packages.outputs.rule_published == 'true')
         id: release_info
         run: |
           RELEASE_TAG=""
           RELEASE_NAME=""
           RELEASE_BODY="## 📦 Published Packages\n\n"
           
-          if [ "${{ needs.build-packages.outputs.config_version }}" != "" ]; then
-            RELEASE_BODY="$RELEASE_BODY- **eslint-config-jshow**: v${{ needs.build-packages.outputs.config_version }}\n"
+          if [ "${{ needs.build-publish.outputs.config_version }}" != "" ]; then
+            RELEASE_BODY="$RELEASE_BODY- **eslint-config-jshow**: v${{ needs.build-publish.outputs.config_version }}\n"
             if [ -z "$RELEASE_TAG" ]; then
-              RELEASE_TAG="eslint-config-jshow@${{ needs.build-packages.outputs.config_version }}"
+              RELEASE_TAG="eslint-config-jshow@${{ needs.build-publish.outputs.config_version }}"
             fi
           fi
           
-          if [ "${{ needs.build-packages.outputs.rule_version }}" != "" ]; then
-            RELEASE_BODY="$RELEASE_BODY- **eslint-plugin-jshow**: v${{ needs.build-packages.outputs.rule_version }}\n"
+          if [ "${{ needs.build-publish.outputs.rule_version }}" != "" ]; then
+            RELEASE_BODY="$RELEASE_BODY- **eslint-plugin-jshow**: v${{ needs.build-publish.outputs.rule_version }}\n"
             if [ -z "$RELEASE_TAG" ]; then
-              RELEASE_TAG="eslint-plugin-jshow@${{ needs.build-packages.outputs.rule_version }}"
-            elif [ "${{ needs.build-packages.outputs.config_version }}" != "" ]; then
-              RELEASE_TAG="packages@${{ needs.build-packages.outputs.config_version }}+${{ needs.build-packages.outputs.rule_version }}"
+              RELEASE_TAG="eslint-plugin-jshow@${{ needs.build-publish.outputs.rule_version }}"
+            elif [ "${{ needs.build-publish.outputs.config_version }}" != "" ]; then
+              RELEASE_TAG="packages@${{ needs.build-publish.outputs.config_version }}+${{ needs.build-publish.outputs.rule_version }}"
             fi
           fi
           
@@ -190,7 +194,6 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        if: (needs.build-packages.outputs.config_published == 'true' || needs.build-packages.outputs.rule_published == 'true')
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.release_info.outputs.tag }}

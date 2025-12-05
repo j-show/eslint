@@ -64,17 +64,27 @@ const packageJsonPath = path.join(
   'package.json'
 );
 
-// 检查文件是否存在
-if (!fs.existsSync(packageJsonPath)) {
-  console.error(`错误: 文件不存在: ${packageJsonPath}`);
-  process.exit(1);
-}
-
 // 读取 package.json
 const packageJson = readPackageJson(packageJsonPath);
 if (!packageJson) {
   process.exit(1);
 }
+
+const rootPackageJson = readPackageJson(
+  path.join(__dirname, '../package.json')
+);
+if (!rootPackageJson) {
+  console.error('错误: 无法读取 root package.json');
+  process.exit(1);
+}
+
+packageJson.license = rootPackageJson.license;
+packageJson.homepage = rootPackageJson.homepage;
+packageJson.repository = rootPackageJson.repository;
+packageJson.bugs = rootPackageJson.bugs;
+
+delete packageJson.scripts;
+delete packageJson.devDependencies;
 
 // 获取当前版本
 const currentVersion = packageJson.version;

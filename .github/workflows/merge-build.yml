@@ -139,7 +139,7 @@ jobs:
       - name: Install Dependencies
         run: |
           rm -rf ./.npmrc
-          pnpm install
+          pnpm install --no-frozen-lockfile
 
       - name: Upgrade packages/rule version
         if: github.event_name == 'workflow_dispatch' || needs.check-label.outputs.release_rule == 'true'
