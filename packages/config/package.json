@@ -1,6 +1,6 @@
 {
   "name": "eslint-config-jshow",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "ESLint config for jshow",
   "keywords": [
     "eslint",
