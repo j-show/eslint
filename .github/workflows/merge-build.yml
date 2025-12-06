@@ -164,7 +164,7 @@ jobs:
       - name: Build commit message
         id: commit_msg
         run: |
-          COMMIT_MSG="chore: upgrade packages version"
+          COMMIT_MSG="chore: upgrade packages version\n"
           if [ "${{ steps.upgrade_config.outputs.version }}" != "" ]; then
             COMMIT_MSG="$COMMIT_MSG\n- eslint-config-jshow ${{ steps.upgrade_config.outputs.version }}"
           fi
