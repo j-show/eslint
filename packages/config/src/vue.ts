@@ -27,6 +27,8 @@ const legacyConfigs: Linter.Config[] = buildCompat(
       globals: globals.vue
     },
     rules: {
+      'no-undef': 'off',
+
       '@typescript-eslint/no-unused-vars': 'off',
 
       'jshow/sort-import': [
@@ -43,10 +45,11 @@ const legacyConfigs: Linter.Config[] = buildCompat(
         }
       ],
 
-      'vue/v-on-event-hyphenation': 'off',
-      'vue/multi-word-component-names': ['warn'],
       'vue/component-api-style': ['error', ['script-setup', 'composition']],
-      'vue/no-unused-components': ['off', { ignoreWhenBindingPresent: true }]
+      'vue/multi-word-component-names': ['warn'],
+      'vue/no-dupe-keys': 'off',
+      'vue/no-unused-components': ['off', { ignoreWhenBindingPresent: true }],
+      'vue/v-on-event-hyphenation': 'off'
     }
   }
 );

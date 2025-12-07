@@ -16,32 +16,32 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.es.js",
+      "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
     "./typescript": {
       "types": "./dist/typescript.d.ts",
-      "import": "./dist/typescript.es.js",
+      "import": "./dist/typescript.mjs",
       "require": "./dist/typescript.cjs"
     },
     "./browser": {
       "types": "./dist/browser.d.ts",
-      "import": "./dist/browser.es.js",
+      "import": "./dist/browser.mjs",
       "require": "./dist/browser.cjs"
     },
     "./node": {
       "types": "./dist/node.d.ts",
-      "import": "./dist/node.es.js",
+      "import": "./dist/node.mjs",
       "require": "./dist/node.cjs"
     },
     "./react": {
       "types": "./dist/react.d.ts",
-      "import": "./dist/react.es.js",
+      "import": "./dist/react.mjs",
       "require": "./dist/react.cjs"
     },
     "./vue": {
       "types": "./dist/vue.d.ts",
-      "import": "./dist/vue.es.js",
+      "import": "./dist/vue.mjs",
       "require": "./dist/vue.cjs"
     }
   },
