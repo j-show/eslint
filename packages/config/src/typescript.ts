@@ -42,6 +42,7 @@ const legacyConfigs: Linter.Config[] = buildCompat(
       //#region eslint
 
       'no-console': ['error', { allow: ['warn', 'error', 'info', 'debug'] }],
+      'no-constant-binary-expression': 'error',
       'no-constant-condition': 'warn',
       'no-continue': 'off',
       'no-control-regex': 'off',
@@ -87,9 +88,11 @@ const legacyConfigs: Linter.Config[] = buildCompat(
       'no-sequences': 'error',
       'no-this-before-super': 'error',
       'no-throw-literal': 'off',
+      'no-undefined': 'error',
       'no-useless-escape': 'warn',
       'no-use-before-define': 'error',
       'no-var': 'error',
+      'no-void': ['error', { allowAsStatement: true }],
 
       'no-restricted-syntax': [
         'error',
@@ -118,14 +121,43 @@ const legacyConfigs: Linter.Config[] = buildCompat(
         'error',
         { allow: ['arrowFunctions', 'decoratedFunctions'] }
       ],
-      '@typescript-eslint/no-empty-interface': 'off',
+      '@typescript-eslint/no-empty-object-type': [
+        'warn',
+        { allowInterfaces: 'with-single-extends' }
+      ],
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-inferrable-types': 'off',
+      '@typescript-eslint/no-invalid-void-type': 'warn',
       '@typescript-eslint/no-namespace': 'off',
       '@typescript-eslint/no-non-null-assertion': 'warn',
       '@typescript-eslint/no-this-alias': 'off',
 
+      '@typescript-eslint/no-restricted-types': [
+        'error',
+        {
+          types: {
+            Object: {
+              message: 'Use {} instead.'
+            },
+            String: {
+              message: 'Use string instead.',
+              fixWith: 'string'
+            },
+            Number: {
+              message: 'Use number instead.',
+              fixWith: 'number'
+            },
+            Boolean: {
+              message: 'Use boolean instead.',
+              fixWith: 'boolean'
+            }
+          }
+        }
+      ],
+      '@typescript-eslint/no-require-imports': 'warn',
+
       '@typescript-eslint/no-unnecessary-type-assertion': 'off',
+      '@typescript-eslint/no-unsafe-function-type': 'warn',
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -139,6 +171,7 @@ const legacyConfigs: Linter.Config[] = buildCompat(
         'warn',
         { functions: false, classes: false, typedefs: false, variables: false }
       ],
+      '@typescript-eslint/no-wrapper-object-types': 'error',
 
       '@typescript-eslint/adjacent-overload-signatures': 'error',
       '@typescript-eslint/await-thenable': 'off',
@@ -147,6 +180,10 @@ const legacyConfigs: Linter.Config[] = buildCompat(
       '@typescript-eslint/class-name-casing': [
         'off',
         { allowUnderscorePrefix: true }
+      ],
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { fixStyle: 'inline-type-imports' }
       ],
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
@@ -171,19 +208,24 @@ const legacyConfigs: Linter.Config[] = buildCompat(
               'public-instance-field',
               // constructor
               'constructor',
-              // abstract
-              ['protected-abstract-get', 'protected-abstract-set'],
-              ['public-abstract-get', 'public-abstract-set'],
-              'protected-abstract-method',
-              'public-abstract-method',
               // instance getter & set
               ['private-instance-get', 'private-instance-set'],
-              ['protected-instance-get', 'protected-instance-set'],
-              ['public-instance-get', 'public-instance-set'],
+              [
+                'protected-abstract-get',
+                'protected-abstract-set',
+                'protected-instance-get',
+                'protected-instance-set'
+              ],
+              [
+                'public-abstract-get',
+                'public-abstract-set',
+                'public-instance-get',
+                'public-instance-set'
+              ],
               // instance method
               'private-instance-method',
-              'protected-instance-method',
-              'public-instance-method'
+              ['protected-abstract-method', 'protected-instance-method'],
+              ['public-abstract-method', 'public-instance-method']
             ]
           }
         }

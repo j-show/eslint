@@ -29,7 +29,7 @@ export default defineConfig({
     lib: {
       entry: resolve('src/index.ts'),
       formats: ['cjs', 'es'],
-      fileName: format => `index.${format === 'es' ? 'es.js' : format}`
+      fileName: format => `index.${format === 'es' ? 'mjs' : format}`
     },
     rollupOptions: {
       external: Array.from(externals)

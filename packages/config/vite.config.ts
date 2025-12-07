@@ -53,8 +53,8 @@ export default defineConfig({
         {
           format: 'es',
           exports: 'default',
-          entryFileNames: '[name].es.js',
-          chunkFileNames: 'chunks/[hash].es.js',
+          entryFileNames: '[name].mjs',
+          chunkFileNames: 'chunks/[hash].mjs',
           interop: 'auto',
           inlineDynamicImports: false
         }
