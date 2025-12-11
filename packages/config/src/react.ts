@@ -1,4 +1,4 @@
-import { ESLint, Linter } from 'eslint';
+import type { ESLint, Linter } from 'eslint';
 import pluginReact from 'eslint-plugin-react';
 import pluginReactHooks from 'eslint-plugin-react-hooks';
 
@@ -10,6 +10,27 @@ const reactConfigs = pluginReact.configs.flat as unknown as Record<
   Linter.Config
 >;
 
+/**
+ * React 应用 ESLint 配置
+ *
+ * 基于浏览器配置，添加了 React 和 React Hooks 的规则。
+ * 适用于使用 React 框架的前端项目。
+ *
+ * 主要特性：
+ * - 继承浏览器配置的所有规则
+ * - 启用 React 推荐规则和 JSX Runtime 规则
+ * - 启用 React Hooks 规则（rules-of-hooks、exhaustive-deps）
+ * - 针对 React 优化的导入排序（React 相关导入优先）
+ * - 自动检测 React 版本
+ * - 针对 `.jsx` 和 `.tsx` 文件的特定规则
+ *
+ * @example
+ * ```js
+ * import reactConfig from 'eslint-config-jshow/react';
+ *
+ * export default [...reactConfig];
+ * ```
+ */
 const legacyConfigs: Linter.Config[] = buildCompat(
   ...browserConfigs,
   reactConfigs['recommended'],

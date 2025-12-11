@@ -334,7 +334,8 @@ Automatically prunes `import` specifiers that never get referenced. When every s
 			"warn",
 			{
 				"autoFix": "always",
-				"ignoredNames": ["_"]
+				"ignoredNames": ["^_"],
+				"ignoreJSDoc": true
 			}
 		]
 	}
@@ -342,7 +343,8 @@ Automatically prunes `import` specifiers that never get referenced. When every s
 ```
 
 - `autoFix`: `"always"` (default) deletes unused specifiers automatically. Set to `"off"` if you only need diagnostics.
-- `ignoredNames`: members matching these names are always ignored. Use this when `_` or other conventions mark intentionally unused imports.
+- `ignoredNames`: members matching these names are always ignored. Supports exact string matching or regex patterns (e.g., `"^_"` matches any identifier starting with underscore). Use this when `_` or other conventions mark intentionally unused imports.
+- `ignoreJSDoc`: `true` (default) skips checking JSDoc comments for references. Set to `false` to consider JSDoc references (e.g., `@link`, `@see`, `@type`) when determining if an import is used.
 
 ---
 
@@ -360,7 +362,8 @@ Targets unused variable declarations, including destructured bindings. The fixer
 			"warn",
 			{
 				"autoFix": "always",
-				"ignoredNames": ["_"]
+				"ignoredNames": ["^_"],
+				"ignoreFunction": true
 			}
 		]
 	}
@@ -368,7 +371,8 @@ Targets unused variable declarations, including destructured bindings. The fixer
 ```
 
 - `autoFix`: `"always"` attempts to remove the unused declaration; `"off"` only reports.
-- `ignoredNames`: whitelist of identifiers that should never trigger the rule (defaults to `_`).
+- `ignoredNames`: whitelist of identifiers that should never trigger the rule. Supports exact string matching or regex patterns (e.g., `"^_"` matches any identifier starting with underscore). Defaults to `["^_"]`.
+- `ignoreFunction`: `true` (default) ignores variables initialized with function expressions, call expressions, or await expressions. Set to `false` to also check and remove unused function variables. Note: variables in destructuring patterns are always checked regardless of this option.
 ---
 
 ## License

@@ -9,10 +9,24 @@ import typescriptEslint from 'typescript-eslint';
 import { buildCompat } from './utils';
 
 /**
- * jShow 的 TypeScript 通用规则集。
+ * jShow 的 TypeScript 通用规则集
+ *
  * 该配置在官方推荐规则之上开启了大量实践约束，同时挂载自研插件
  * (`eslint-plugin-jshow`) 以强制显式访问修饰符、禁止未使用的导入/变量，
  * 并预先串好 import 排序策略，适合作为所有下游配置的基础。
+ *
+ * 该配置包含：
+ * - ESLint 官方推荐规则
+ * - TypeScript ESLint 推荐规则
+ * - jShow 自定义规则（explicit-member-accessibility、sort-import、sort-export、unused-import、unused-variable）
+ * - 针对测试框架的全局变量（vitest、jest）
+ *
+ * @example
+ * ```js
+ * import typescriptConfig from 'eslint-config-jshow/typescript';
+ *
+ * export default [...typescriptConfig];
+ * ```
  */
 
 const legacyConfigs: Linter.Config[] = buildCompat(

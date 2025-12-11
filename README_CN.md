@@ -31,6 +31,55 @@
 | [`packages/config`](./packages/config) | Flat Config 入口，内置 TypeScript、Browser、Node、React、Vue 预设，并自动启用 `eslint-plugin-jshow`、Prettier 对齐、自研 `jshow/sort-import` / `jshow/sort-export` 以及未使用导入/变量策略。 |
 | [`packages/rule`](./packages/rule) | 自研 ESLint 插件，提供 `explicit-member-accessibility`、`sort-export`、`sort-import`、`unused-import`、`unused-variable` 五条规则及安全的自动修复。 |
 
+## 可用规则
+
+### `jshow/explicit-member-accessibility`
+
+要求类成员和方法显式声明访问修饰符。支持自动修复，可配置默认修饰符。
+
+**配置选项：**
+- `accessibility`: `'off' | 'explicit' | 'no-public'` - 全局访问修饰符策略
+- `fixWith`: `'public' | 'protected' | 'private'` - 自动修复时使用的默认修饰符
+- `ignoredNames`: `string[]` - 要忽略的成员名称列表
+- `staticAccessibility`: `'off' | 'explicit' | 'no-accessibility'` - 静态成员的策略
+- `overrides`: 对象，可按成员类型（constructors、methods、properties 等）单独配置
+
+### `jshow/sort-import`
+
+强制导入语句按配置的分组和间距排序。
+
+**配置选项：**
+- `autoFix`: `'off' | 'always'` - 是否启用自动排序
+- `order`: `'asc' | 'desc'` - 组内排序方向
+- `groups`: `string[][]` - 正则表达式数组，用于分组导入
+- `clusters`: `number[]` - 每个分组的间距策略（0=紧凑，1=每行后空一行，2=每行前后各空一行）
+
+### `jshow/sort-export`
+
+强制导出语句按配置的顺序排序。
+
+**配置选项：**
+- `autoFix`: `'off' | 'always'` - 是否启用自动排序
+- `order`: `'asc' | 'desc'` - 排序方向
+
+### `jshow/unused-import`
+
+检测并移除未使用的导入。支持 JSDoc 引用检查。
+
+**配置选项：**
+- `autoFix`: `'off' | 'always'` - 是否启用自动移除（默认：`'always'`）
+- `ignoredNames`: `string[]` - 要忽略的模式（支持正则表达式字符串，如 `'^_'`）。默认：`['^_']`
+- `ignoreJSDoc`: `boolean` - 是否忽略 JSDoc 中的引用（默认：`true`）
+
+### `jshow/unused-variable`
+
+检测并移除未使用的变量声明，包括解构绑定。修复器会智能地删除最小必要范围，确保代码语法仍然有效。
+
+**配置选项：**
+- `autoFix`: `'off' | 'always'` - 是否启用自动移除（默认：`'always'`）
+- `ignoredNames`: `string[]` - 要忽略的模式（支持正则表达式字符串，如 `'^_'`）。默认：`['^_']`
+- `ignoreFunction`: `boolean` - 是否忽略函数变量（默认：`true`）。注意：解构变量无论此选项如何设置都会被检查。
+
 ---
 
 ## 为什么选择 jshow-eslint？
@@ -40,6 +89,8 @@
 - **插件即服务**：`eslint-plugin-jshow` 随配置自动加载，无需额外版本管理。
 - **示例驱动**：React/Vue 示例在 CI 中执行，确保发布时的真实体验。
 - **现代工具链**：面向 ESLint 9 Flat Config，借 `FlatCompat` 兼容传统插件生态。
+- **性能优化**：规则实现注重性能，使用 `Set` 实现 O(1) 查找，适合大型代码库。
+- **文档完善**：提供详细的 JSDoc 注释和中英文 README 文档。
 
 ---
 
@@ -61,11 +112,70 @@
 
    将 `react` 替换为 `browser`、`node`、`vue` 或默认的 TypeScript 预设即可。
 
+   **可用预设：**
+   - `eslint-config-jshow/typescript` - TypeScript 基础配置
+   - `eslint-config-jshow/browser` - 浏览器环境（基于 typescript）
+   - `eslint-config-jshow/node` - Node.js 环境（基于 typescript）
+   - `eslint-config-jshow/react` - React 应用（基于 browser）
+   - `eslint-config-jshow/vue` - Vue 3 应用（基于 browser）
+
 3. **运行 ESLint**
 
    ```bash
    pnpm exec eslint . --report-unused-disable-directives --max-warnings=0
    ```
+
+## 配置示例
+
+### TypeScript 项目
+
+```js
+import typescriptConfig from 'eslint-config-jshow/typescript';
+
+export default [...typescriptConfig];
+```
+
+### React 项目
+
+```js
+import reactConfig from 'eslint-config-jshow/react';
+
+export default [...reactConfig];
+```
+
+### Vue 项目
+
+```js
+import vueConfig from 'eslint-config-jshow/vue';
+
+export default [...vueConfig];
+```
+
+### 自定义配置
+
+```js
+import typescriptConfig from 'eslint-config-jshow/typescript';
+
+export default [
+  ...typescriptConfig,
+  {
+    rules: {
+      'jshow/sort-import': [
+        'error',
+        {
+          groups: [
+            ['^node:'],
+            ['^@?[a-zA-Z]'],
+            ['^@/'],
+            ['^\\.\\./'],
+            ['^\\./']
+          ]
+        }
+      ]
+    }
+  }
+];
+```
 
 ---
 

@@ -7,22 +7,34 @@
 import { AST_NODE_TYPES } from '@typescript-eslint/types';
 import {
   ESLintUtils,
-  JSONSchema,
-  TSESLint,
-  TSESTree
+  type JSONSchema,
+  type TSESLint,
+  type TSESTree
 } from '@typescript-eslint/utils';
 
-import { ReportIssueFunc, RuleDefinition } from './types';
-import { getContextReportIssue } from './utils';
+import { type ReportIssueFunc, type RuleDefinition } from './types';
+import { getContextReportIssue, isIgnoredName, stringToRegExp } from './utils';
 
 /**
- * 规则配置：
- * - autoFix：'always' 会直接删除未使用 import，'off' 仅提示开发者手动处理。
- * - ignoredNames：忽略匹配的导入名（支持通配符 * ? 或正则字面量 /foo/），适配下划线等约定。
+ * 未使用导入规则配置
+ *
+ * @property autoFix - 'always' 会直接删除未使用 import，'off' 仅提示开发者手动处理
+ * @property ignoredNames - 忽略匹配的导入名（支持字符串精确匹配或可转换为正则的字符串，如 '^_'），适配下划线等约定
+ * @property ignoreJSDoc - 是否忽略 JSDoc 逻辑，默认为 true，表示忽略 JSDoc 中的引用检查
+ *
+ * @example
+ * ```ts
+ * {
+ *   autoFix: 'always',
+ *   ignoredNames: ['^_', '^unused'],
+ *   ignoreJSDoc: true
+ * }
+ * ```
  */
 export interface UnusedImportOption {
   autoFix?: 'off' | 'always';
   ignoredNames?: string[];
+  ignoreJSDoc?: boolean;
 }
 
 export type UnusedImportMessageIds = 'unusedSingleImport' | 'unusedAllImport';
@@ -30,19 +42,39 @@ export type UnusedImportMessageIds = 'unusedSingleImport' | 'unusedAllImport';
 type ReportIssue = ReportIssueFunc<UnusedImportMessageIds>;
 
 /**
- * 归一化后的配置，提前把所有忽略规则编译为正则，提升遍历效率。
+ * 归一化后的配置，供核心逻辑直接消费布尔与白名单数组。
  */
 interface ReportOptions {
   autoFix: boolean;
-  ignoredMatchers: RegExp[];
+  ignoredNames: Array<string | RegExp>;
+  ignoreJSDoc: boolean;
 }
 
-const includeCommentsFilter = { includeComments: true } as const;
+const DEFAULT_OPTION: Required<UnusedImportOption> = {
+  autoFix: 'always',
+  ignoredNames: ['^_'],
+  ignoreJSDoc: true
+};
 
+/** 获取 token 时包含注释的选项 */
+const INCLUDE_COMMENTS_FILTER = { includeComments: true } as const;
+
+/**
+ * 转义正则表达式特殊字符
+ *
+ * @param value - 待转义的字符串
+ * @returns 转义后的字符串，所有特殊字符都被转义
+ */
 const escapeRegExp = (value: string) =>
   // 转义用户输入中的正则特殊字符，便于构造精确匹配
   value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+/**
+ * 创建用于匹配 JSDoc 中引用的正则表达式模式
+ *
+ * @param name - 要匹配的标识符名称
+ * @returns 编译后的正则表达式，用于匹配 JSDoc 注释中的引用
+ */
 const createJsDocPattern = (name: string) => {
   const identifier = escapeRegExp(name);
   // 构造一个同时覆盖 @link/@see/@type 等写法的正则
@@ -57,41 +89,13 @@ const createJsDocPattern = (name: string) => {
   );
 };
 
-const REGEX_LITERAL = /^\/(.+)\/([a-z]*)$/;
-
-const createIgnoredNamePattern = (value?: string): RegExp | null => {
-  const trimmed = value?.trim();
-  if (!trimmed) return null;
-
-  const literal = trimmed.match(REGEX_LITERAL);
-  if (literal) {
-    try {
-      // 支持 /foo/i 形式的正则字面量
-      return new RegExp(literal[1], literal[2]);
-    } catch {
-      // ignore invalid regex literal, fallback to glob conversion
-    }
-  }
-
-  // 处理 glob 星号/问号，转成正则表达式
-  const pattern = trimmed
-    .split('')
-    .map(char => {
-      if (char === '*') return '.*';
-      if (char === '?') return '.';
-      return escapeRegExp(char);
-    })
-    .join('');
-
-  return new RegExp(`^${pattern}$`);
-};
-
-const buildIgnoredNameMatchers = (names: string[] = []) =>
-  names
-    .map(createIgnoredNamePattern)
-    // 过滤掉无法解析的配置项
-    .filter((pattern): pattern is RegExp => Boolean(pattern));
-
+/**
+ * 检查标识符是否在 JSDoc 注释中被引用
+ *
+ * @param sourceCode - 源码访问对象
+ * @param name - 要检查的标识符名称
+ * @returns 如果在 JSDoc 注释中找到引用，返回 true
+ */
 const isUsedInJsDoc = (
   sourceCode: TSESLint.SourceCode,
   name: string
@@ -111,6 +115,11 @@ const isUsedInJsDoc = (
 
 /**
  * 删除整条 import 时的 fixer：除了移除语句本身，还会处理尾随空行数量。
+ *
+ * @param autoFix - 是否启用自动修复
+ * @param sourceCode - 源码访问对象
+ * @param node - 要删除的 import 声明节点
+ * @returns 修复函数，如果 autoFix 为 false 则返回 null
  */
 const buildRemoveImportFix = (
   autoFix: boolean,
@@ -125,7 +134,7 @@ const buildRemoveImportFix = (
     const fixes: TSESLint.RuleFix[] = [fixer.remove(node)];
     const nextToken = sourceCode.getTokenAfter(
       node,
-      includeCommentsFilter as any
+      INCLUDE_COMMENTS_FILTER as any
     );
     if (!nextToken || !node.loc) return fixes;
 
@@ -144,6 +153,11 @@ const buildRemoveImportFix = (
 
 /**
  * 删除单个 specifier 的 fixer：根据位置决定要不要额外移除逗号/花括号。
+ *
+ * @param autoFix - 是否启用自动修复
+ * @param sourceCode - 源码访问对象
+ * @param specifier - 要删除的 import specifier 节点
+ * @returns 修复函数，如果 autoFix 为 false 则返回 null
  */
 const buildRemoveSpecifierFix = (
   autoFix: boolean,
@@ -222,39 +236,51 @@ const buildRemoveSpecifierFix = (
 
 /**
  * 利用 ESLint scope API 判断 import 变量是否被引用；若引用数为 0 再 fallback 到 JSDoc 搜索。
+ *
+ * @param scope - 当前作用域
+ * @param name - 变量名
+ * @param sourceCode - 源码访问对象
+ * @param ignoreJSDoc - 是否忽略 JSDoc 检查，为 true 时跳过 JSDoc 扫描
+ * @returns 变量是否被使用
  */
 const isUsed = (
   scope: TSESLint.Scope.Scope | null,
   name: string,
-  sourceCode: TSESLint.SourceCode
+  sourceCode: TSESLint.SourceCode,
+  ignoreJSDoc: boolean
 ) => {
   const variable = scope?.variables.find(o => o.name === name);
   if (variable && variable.references.length > 0) return true;
+
+  // 如果忽略 JSDoc，直接返回 false
+  if (ignoreJSDoc) return false;
 
   // ESLint 作用域未命中时，再扫描 JSDoc 里的引用
   return isUsedInJsDoc(sourceCode, name);
 };
 
-const IMPORT_AST_TYPES = [
+/** 支持的 import specifier 类型集合 */
+const IMPORT_AST_TYPES = new Set([
   AST_NODE_TYPES.ImportSpecifier,
   AST_NODE_TYPES.ImportDefaultSpecifier,
   AST_NODE_TYPES.ImportNamespaceSpecifier
-];
+]);
 
 /**
  * 检查并报告未使用的 import 成员。
  *
  * 该函数针对每一条 ImportDeclaration 执行，整体逻辑如下：
  * 1. 遍历 import 语句中的所有 specifier，判断哪些未被引用（isUsed）。
- * 2. 支持通过 ignoredMatchers 配置忽略部分变量名（如 _）。
+ * 2. 支持通过 ignoredNames 配置忽略部分变量名（如 _、正则表达式）。
  * 3. 如果全部成员都未被使用，则直接报告并建议删除整条 import。
  * 4. 如果仅部分成员未被使用，则逐个报告并建议删除对应的 specifier。
  * 5. 自动修复动作（fixer）取决于 autoFix 选项。
+ * 6. ignoreJSDoc 选项控制是否检查 JSDoc 注释中的引用。
  *
  * @param scope 当前作用域，用于分析变量引用
  * @param node ImportDeclaration AST 节点
  * @param sourceCode 源码访问对象
- * @param options 规则配置（包括 autoFix、ignoredMatchers）
+ * @param options 规则配置（包括 autoFix、ignoredNames、ignoreJSDoc）
  * @param reportIssue 上报诊断问题的回调
  */
 const checkUnusedImporter = (
@@ -264,8 +290,8 @@ const checkUnusedImporter = (
   options: ReportOptions,
   reportIssue: ReportIssue
 ): void => {
-  // 解析选项中的自动修复标志和忽略匹配器（正则表达式数组）
-  const { autoFix, ignoredMatchers } = options;
+  // 解析选项中的自动修复标志、忽略名称列表和 JSDoc 忽略标志
+  const { autoFix, ignoredNames, ignoreJSDoc } = options;
 
   // 获取所有 import 的成员（如 { foo, bar } 里的 foo/bar）
   const specifiers = node.specifiers;
@@ -274,13 +300,15 @@ const checkUnusedImporter = (
   // 过滤出所有未被使用且未被忽略的成员
   const unusedSpecifiers = specifiers.filter(specifier => {
     // 只检查三类标准的 import 成员类型
-    if (!IMPORT_AST_TYPES.includes(specifier.type)) return false;
+    if (!IMPORT_AST_TYPES.has(specifier.type)) return false;
 
     const name = specifier.local.name;
-    // 匹配 ignoredMatchers 配置项，跳过忽略的变量
-    const ignored = ignoredMatchers.some(pattern => pattern.test(name));
+    // 如果变量在忽略列表中，跳过（支持字符串精确匹配和正则表达式匹配）
+    if (isIgnoredName(name, ignoredNames)) {
+      return false;
+    }
     // 若未忽略且未被使用则保留
-    return !ignored && !isUsed(scope, name, sourceCode);
+    return !isUsed(scope, name, sourceCode, ignoreJSDoc);
   });
 
   // 如果没有未使用的成员，直接返回
@@ -320,16 +348,17 @@ const create: ESLintUtils.RuleCreateAndOptions<
   [UnusedImportOption],
   UnusedImportMessageIds
 >['create'] = (context, defaultOptions) => {
-  const options = context.options || [];
-  const option = options[0] || defaultOptions[0] || {};
+  const option = context.options?.[0] || defaultOptions?.[0] || DEFAULT_OPTION;
 
   // 优先从 context 中获取 sourceCode（早期 ESLint 版本需兼容）
-  const sourceCode = context.sourceCode ?? context.getSourceCode();
-  const ignoredNames = option.ignoredNames || ['_'];
+  const sourceCode = context.sourceCode || context.getSourceCode();
 
   const realOption: ReportOptions = {
-    autoFix: (option.autoFix || 'always') === 'always',
-    ignoredMatchers: buildIgnoredNameMatchers(ignoredNames)
+    autoFix: (option.autoFix || DEFAULT_OPTION.autoFix) === 'always',
+    ignoredNames: (option.ignoredNames || DEFAULT_OPTION.ignoredNames).map(
+      name => stringToRegExp(name) ?? name
+    ),
+    ignoreJSDoc: option.ignoreJSDoc ?? DEFAULT_OPTION.ignoreJSDoc
   };
 
   const reportIssue = getContextReportIssue(context);
@@ -350,7 +379,8 @@ const SchemaOverrideProperties: Record<string, JSONSchema.JSONSchema4> = {
     items: {
       type: 'string'
     }
-  }
+  },
+  ignoreJSDoc: { type: 'boolean' }
 };
 
 const name = 'unused-import';
@@ -381,12 +411,7 @@ const rule = ESLintUtils.RuleCreator(
       }
     ]
   },
-  defaultOptions: [
-    {
-      autoFix: 'always',
-      ignoredNames: ['_']
-    }
-  ],
+  defaultOptions: [DEFAULT_OPTION],
   create
 }) as RuleDefinition;
 

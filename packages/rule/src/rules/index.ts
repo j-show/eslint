@@ -5,7 +5,27 @@ import unusedImport from './unused-import';
 import unusedVariable from './unused-variable';
 
 /**
- * 规则清单：外层插件入口只需同步更新此对象即可。
+ * 规则清单
+ *
+ * 所有自定义 ESLint 规则的注册表。外层插件入口只需同步更新此对象即可。
+ * 每个规则都通过 `[ruleName]: ruleImplementation` 的形式注册。
+ *
+ * @example
+ * ```js
+ * // 使用示例
+ * export default [
+ *   {
+ *     plugins: {
+ *       jshow: jshowPlugin
+ *     },
+ *     rules: {
+ *       'jshow/explicit-member-accessibility': 'error',
+ *       'jshow/sort-import': 'error',
+ *       'jshow/unused-import': 'error'
+ *     }
+ *   }
+ * ];
+ * ```
  */
 export const rules = {
   [explicitMemberAccessibility.name]: explicitMemberAccessibility.rule,

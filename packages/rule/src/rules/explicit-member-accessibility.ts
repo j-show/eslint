@@ -1,18 +1,26 @@
 /**
- * `explicit-member-accessibility` 规则会遍历所有类成员/参数属性，
- * 统一判断其访问修饰符是否符合配置要求，并在可能时给出自动修复方案。
- * 内部通过 `check*AccessibilityModifier` 三组检查器复用一套 fixer 逻辑，
- * 以此在 TS/JS 的 Method、Property、Parameter Property 上实现统一体验。
+ * `explicit-member-accessibility` 规则
+ *
+ * 该规则会遍历所有类成员/参数属性，统一判断其访问修饰符是否符合配置要求，
+ * 并在可能时给出自动修复方案。内部通过 `check*AccessibilityModifier` 三组
+ * 检查器复用一套 fixer 逻辑，以此在 TS/JS 的 Method、Property、Parameter
+ * Property 上实现统一体验。
+ *
+ * @module explicit-member-accessibility
  */
 import { AST_NODE_TYPES, AST_TOKEN_TYPES } from '@typescript-eslint/types';
 import {
   ESLintUtils,
-  JSONSchema,
-  TSESLint,
-  TSESTree
+  type JSONSchema,
+  type TSESLint,
+  type TSESTree
 } from '@typescript-eslint/utils';
 
-import { ReportIssueData, ReportIssueFunc, RuleDefinition } from './types';
+import {
+  type ReportIssueData,
+  type ReportIssueFunc,
+  type RuleDefinition
+} from './types';
 import { getContextReportIssue, getNameFromMember } from './utils';
 
 /**
@@ -31,10 +39,12 @@ type StaticAccessibilityLevel = 'off' | 'explicit' | 'no-accessibility';
 type AccessibilityLevel = 'explicit' | 'no-public';
 
 /**
+ * 访问修饰符修复目标值
+ *
  * fixer 在补齐显式修饰符时可选的目标值：
- * - public：适用于完全公开 API，例如框架导出的类。
- * - protected：默认行为，兼顾继承层级的可见性。
- * - private：适用于只在类内部使用的成员。
+ * - `public`：适用于完全公开 API，例如框架导出的类
+ * - `protected`：默认行为，兼顾继承层级的可见性
+ * - `private`：适用于只在类内部使用的成员
  */
 export type AccessibilityFixWith = 'public' | 'protected' | 'private';
 
@@ -68,12 +78,27 @@ interface OptionOverrides {
 }
 
 /**
- * 规则配置说明：
- * - accessibility：全局默认策略（'off' 关闭、'explicit' 强制补齐、'no-public' 禁止 public）。
- * - fixWith：当需要补齐显式修饰符时使用的默认取值，常见于团队统一要求 protected。
- * - ignoredNames：白名单成员名，适用于兼容遗留 API。
- * - staticAccessibility：静态成员专属策略，详见 StaticAccessibilityLevel 注释。
- * - overrides：按成员类型细化策略，可传入字符串或对象写法。
+ * 显式成员访问修饰符规则配置
+ *
+ * @property accessibility - 全局默认策略（'off' 关闭、'explicit' 强制补齐、'no-public' 禁止 public）
+ * @property fixWith - 当需要补齐显式修饰符时使用的默认取值，常见于团队统一要求 protected
+ * @property ignoredNames - 白名单成员名，适用于兼容遗留 API
+ * @property staticAccessibility - 静态成员专属策略，详见 StaticAccessibilityLevel 注释
+ * @property overrides - 按成员类型细化策略，可传入字符串或对象写法
+ *
+ * @example
+ * ```ts
+ * {
+ *   accessibility: 'explicit',
+ *   fixWith: 'protected',
+ *   ignoredNames: ['legacyMethod'],
+ *   staticAccessibility: 'no-accessibility',
+ *   overrides: {
+ *     constructors: 'no-public',
+ *     methods: { accessibility: 'explicit', fixWith: 'public' }
+ *   }
+ * }
+ * ```
  */
 export interface ExplicitMemberAccessibilityOption {
   accessibility?: 'off' | AccessibilityLevel;
@@ -88,6 +113,16 @@ export type ExplicitMemberAccessibilityMessageIds =
   | 'missingAccessibility';
 
 type ReportIssue = ReportIssueFunc<ExplicitMemberAccessibilityMessageIds>;
+
+const DEFAULT_OPTION: Required<ExplicitMemberAccessibilityOption> = {
+  accessibility: 'explicit',
+  staticAccessibility: 'no-accessibility',
+  fixWith: 'protected',
+  ignoredNames: [],
+  overrides: {
+    constructors: 'no-public'
+  }
+};
 
 /**
  * 根据不同的修改模式生成 fixer。
@@ -131,15 +166,20 @@ const getAccessibilityFixer = (
       const token = tokens[i];
 
       if (token.type === AST_TOKEN_TYPES.Keyword && token.value === char) {
-        const commensAfterPublicKeyword = code.getCommentsAfter(token);
-        if (commensAfterPublicKeyword.length) {
+        const commentsAfterPublicKeyword = code.getCommentsAfter(token);
+        if (commentsAfterPublicKeyword.length > 0) {
           // public /* Hi there! */ static foo()
           // ^^^^^^^
-          changRange = [token.range[0], commensAfterPublicKeyword[0].range[0]];
+          changRange = [token.range[0], commentsAfterPublicKeyword[0].range[0]];
         } else {
           // public static foo()
           // ^^^^^^^
-          changRange = [token.range[0], tokens[i + 1].range[0]];
+          const nextToken = tokens[i + 1];
+          if (nextToken) {
+            changRange = [token.range[0], nextToken.range[0]];
+          } else {
+            changRange = token.range;
+          }
         }
         break;
       }
@@ -490,16 +530,17 @@ const create: ESLintUtils.RuleCreateAndOptions<
   ExplicitMemberAccessibilityMessageIds
 >['create'] = (context, defaultOptions) => {
   // 获取用户传入的配置项（若有），否则使用默认规则
-  const options = context.options || [];
-  const option = options[0] || defaultOptions[0] || {};
+  const option = context.options?.[0] || defaultOptions?.[0] || DEFAULT_OPTION;
 
   // 1. 解析 fixWith 的默认值（未配置时为 'protected'）
-  const fixWith = option.fixWith ?? 'protected';
+  const fixWith = option.fixWith ?? DEFAULT_OPTION.fixWith;
 
   // 2. 整理基础配置，包括 accessibility 策略与 ignoredNames （去重处理）
   const baseOption = {
-    accessibility: option.accessibility || 'explicit',
-    ignoredNames: [...new Set(option.ignoredNames || []).values()]
+    accessibility: option.accessibility ?? DEFAULT_OPTION.accessibility,
+    ignoredNames: [
+      ...new Set(option.ignoredNames ?? DEFAULT_OPTION.ignoredNames).values()
+    ]
   };
 
   // 3. 获取 overrides 覆写规则对象
@@ -510,14 +551,14 @@ const create: ESLintUtils.RuleCreateAndOptions<
   //    - constructors/parameterProperties/properties/accessors/methods：按类型细化策略
   //      并调用 parseOverrideAccessibility 生成统一结构
   const realOption = {
-    staticAccessibility: (option.staticAccessibility ||
-      'no-accessibility') as StaticAccessibilityLevel,
+    staticAccessibility:
+      option.staticAccessibility ?? DEFAULT_OPTION.staticAccessibility,
     constructors: parseOverrideAccessibility(
-      overrides?.constructors,
+      overrides.constructors,
       baseOption.accessibility === 'explicit'
         ? { accessibility: 'no-public', ignoredNames: [] }
         : baseOption,
-      option.fixWith ?? 'public'
+      fixWith
     ),
     parameterProperties: parseOverrideAccessibility(
       overrides.parameterProperties,
@@ -587,11 +628,12 @@ const create: ESLintUtils.RuleCreateAndOptions<
   };
 };
 
-const SampleAccessibilityLevels = ['off', 'explicit'];
+/** 基础可访问性级别选项 */
+const SAMPLE_ACCESSIBILITY_LEVELS = ['off', 'explicit'] as const;
 
 const FullAccessibilityLevel: JSONSchema.JSONSchema4StringSchema = {
   type: 'string',
-  enum: [...SampleAccessibilityLevels, 'no-public']
+  enum: [...SAMPLE_ACCESSIBILITY_LEVELS, 'no-public']
 };
 
 const SchemaOverrideProperties: Record<string, JSONSchema.JSONSchema4> = {
@@ -642,7 +684,7 @@ const rule = ESLintUtils.RuleCreator(
           ...SchemaOverrideProperties,
           staticAccessibility: {
             type: 'string',
-            enum: [...SampleAccessibilityLevels, 'no-accessibility']
+            enum: [...SAMPLE_ACCESSIBILITY_LEVELS, 'no-accessibility']
           },
           overrides: {
             type: 'object',
@@ -659,16 +701,7 @@ const rule = ESLintUtils.RuleCreator(
       }
     ]
   },
-  defaultOptions: [
-    {
-      accessibility: 'explicit',
-      staticAccessibility: 'no-accessibility',
-      fixWith: 'protected',
-      overrides: {
-        constructors: 'no-public'
-      }
-    }
-  ],
+  defaultOptions: [DEFAULT_OPTION],
   create
 }) as RuleDefinition;
 

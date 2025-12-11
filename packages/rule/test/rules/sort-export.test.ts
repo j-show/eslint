@@ -90,10 +90,11 @@ testRun(sortExport.name, sortExport.rule, {
       code: format`
         export type { Z } from './z';
         export type { A } from './a';
+        export type { B } from './z';
       `,
       output: format`
         export type { A } from './a';
-        export type { Z } from './z';
+        export type { B, Z } from './z';
       `,
       errors: [{ messageId: 'exportsNotSorted' }]
     },
@@ -103,6 +104,90 @@ testRun(sortExport.name, sortExport.rule, {
         export { alpha } from './alpha';
       `,
       options: [{ autoFix: 'off' }],
+      errors: [{ messageId: 'exportsNotSorted' }]
+    },
+    {
+      code: format`
+        export { foo } from './utils';
+        export { bar } from './utils';
+        export { baz } from './utils';
+      `,
+      output: format`
+        export { bar, baz, foo } from './utils';
+      `,
+      errors: [{ messageId: 'exportsNotSorted' }]
+    },
+    {
+      code: format`
+        export { Z } from './z';
+        export { A } from './a';
+        export { B } from './z';
+        export { C } from './a';
+      `,
+      output: format`
+        export { A, C } from './a';
+        export { B, Z } from './z';
+      `,
+      errors: [{ messageId: 'exportsNotSorted' }]
+    },
+    {
+      code: format`
+        export type { Z } from './z';
+        export type { A } from './a';
+        export type { B } from './z';
+        export { value } from './z';
+      `,
+      output: format`
+        export type { A } from './a';
+        export { value, type B, type Z } from './z';
+      `,
+      errors: [{ messageId: 'exportsNotSorted' }]
+    },
+    {
+      code: format`
+        export { foo as Foo } from './utils';
+        export { bar } from './utils';
+        export { baz as Baz } from './utils';
+      `,
+      output: format`
+        export { bar, baz as Baz, foo as Foo } from './utils';
+      `,
+      errors: [{ messageId: 'exportsNotSorted' }]
+    },
+    {
+      code: format`
+        export { alpha } from './alpha';
+        export { beta } from './beta';
+        export { gamma } from './alpha';
+      `,
+      output: format`
+        export { alpha, gamma } from './alpha';
+        export { beta } from './beta';
+      `,
+      errors: [{ messageId: 'exportsNotSorted' }]
+    },
+    {
+      code: format`
+        export type { User } from './types';
+        export type { Post } from './types';
+        export type { Comment } from './types';
+      `,
+      output: format`
+        export type { Comment, Post, User } from './types';
+      `,
+      errors: [{ messageId: 'exportsNotSorted' }]
+    },
+    {
+      code: format`
+        export { beta } from './beta';
+        export { alpha } from './alpha';
+        export { gamma } from './beta';
+      `,
+      options: [{ order: 'desc' }],
+      output: format`
+        export { gamma, beta } from './beta';
+        export { alpha } from './alpha';
+      `,
       errors: [{ messageId: 'exportsNotSorted' }]
     }
   ]

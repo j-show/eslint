@@ -8,6 +8,10 @@ on:
       - 'packages/rule/package.json'
       - 'packages/config/package.json'
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   check-commit:
     runs-on: ubuntu-latest
@@ -50,8 +54,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: check-commit
     if: needs.check-commit.outputs.should_run == 'true'
-    permissions:
-      contents: write
     outputs:
       check_config: ${{ steps.check_config.outputs.modified }}
       check_rule: ${{ steps.check_rule.outputs.modified }}
@@ -77,8 +79,8 @@ jobs:
           node-version: 20
           registry-url: 'https://registry.npmjs.org/'
           cache: 'pnpm'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # env:
+        #   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Get last commit
         id: last_commit
@@ -108,7 +110,9 @@ jobs:
       - name: Install Dependencies & Cleanup dist
         if: steps.check_config.outputs.modified != '0' || steps.check_rule.outputs.modified != '0'
         run: |
-          rm -rf ./.npmrc
+          # 删除可能干扰认证的 .npmrc 文件
+          rm -rf ./.npmrc ~/.npmrc
+          npm install -g npm@latest
           pnpm install --no-frozen-lockfile
           pnpm clean
 
@@ -128,7 +132,7 @@ jobs:
         id: publish_rule
         run: |
           cd packages/rule
-          npm publish --no-git-checks --access public
+          npm publish --access public
           echo "published=true" >> $GITHUB_OUTPUT
           cd ../..
 
@@ -148,6 +152,6 @@ jobs:
         id: publish_config
         run: |
           cd packages/config
-          npm publish --no-git-checks --access public
+          npm publish --access public
           echo "published=true" >> $GITHUB_OUTPUT
           cd ../..

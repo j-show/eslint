@@ -106,9 +106,98 @@ testRun(sortImport.name, sortImport.rule, {
         import z from 'z';
         import a from 'a';
       `
+    },
+    {
+      code: format`
+        import { a, b } from 'foo';
+      `
+    },
+    {
+      code: format`
+        import a, { b } from 'foo';
+      `
+    },
+    {
+      code: format`
+        import { type TypeA, ValueA } from 'module';
+      `
+    },
+    {
+      code: format`
+        import { type TypeA, type TypeB, ValueA } from 'module';
+      `
+    },
+    {
+      code: format`
+        import { type TypeA, ValueA } from 'module-a';
+        import { type TypeB, ValueB } from 'module-b';
+      `
+    },
+    {
+      code: format`
+        import DefaultValue, { type TypeA, ValueA } from 'module';
+      `
+    },
+    {
+      code: format`
+        import type DefaultType, { ValueA } from 'module';
+      `
     }
   ],
   invalid: [
+    {
+      code: format`
+        import { a } from 'foo';
+        import { b } from 'foo';
+      `,
+      output: format`
+        import { a, b } from 'foo';
+      `,
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
+    {
+      code: format`
+        import a from 'foo';
+        import { b } from 'foo';
+      `,
+      output: format`
+        import a, { b } from 'foo';
+      `,
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
+    {
+      code: format`
+        import { a } from 'foo';
+        import { b } from 'bar';
+        import { c } from 'foo';
+      `,
+      output: format`
+        import { b } from 'bar';
+        import { a, c } from 'foo';
+      `,
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
+    {
+      code: format`
+        import a from 'foo';
+        import { b, c } from 'foo';
+      `,
+      output: format`
+        import a, { b, c } from 'foo';
+      `,
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
+    {
+      code: format`
+        import { a } from 'foo';
+        import { b } from 'foo';
+        import { c } from 'foo';
+      `,
+      output: format`
+        import { a, b, c } from 'foo';
+      `,
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
     {
       code: format`
         import z from 'z';
@@ -129,7 +218,7 @@ testRun(sortImport.name, sortImport.rule, {
       output: format`
         import fs from 'fs';
         import path from 'path';
-        
+
         import local from './local';
       `,
       options: [
@@ -272,7 +361,7 @@ testRun(sortImport.name, sortImport.rule, {
         import z from 'z';
         import a from 'a';
       `,
-      options: [{ autoFix: 'off' }],
+      options: [{ autoFix: false }],
       errors: [{ messageId: 'importsNotSorted' }]
     },
     {
@@ -285,6 +374,110 @@ testRun(sortImport.name, sortImport.rule, {
         /* comment */
         import a from 'a';
         import z from 'z';
+      `,
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
+    {
+      code: format`
+        import { ValueA } from 'module';
+        import type { TypeA } from 'module';
+      `,
+      output: format`
+        import { type TypeA, ValueA } from 'module';
+      `,
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
+    {
+      code: format`
+        import type { TypeA } from 'module';
+        import { ValueA } from 'module';
+      `,
+      output: format`
+        import { type TypeA, ValueA } from 'module';
+      `,
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
+    {
+      code: format`
+        import type { TypeA } from 'module';
+        import type { TypeB } from 'module';
+        import { ValueA } from 'module';
+      `,
+      output: format`
+        import { type TypeA, type TypeB, ValueA } from 'module';
+      `,
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
+    {
+      code: format`
+        import { ValueA } from 'module';
+        import type { TypeA } from 'module';
+        import { ValueB } from 'module';
+      `,
+      output: format`
+        import { type TypeA, ValueA, ValueB } from 'module';
+      `,
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
+    {
+      code: format`
+        import type DefaultType from 'module';
+        import { ValueA } from 'module';
+      `,
+      output: format`
+        import type DefaultType, { ValueA } from 'module';
+      `,
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
+    {
+      code: format`
+        import DefaultValue from 'module';
+        import type { TypeA } from 'module';
+      `,
+      output: format`
+        import DefaultValue, { type TypeA } from 'module';
+      `,
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
+    {
+      code: format`
+        import { type TypeA } from 'module';
+        import { ValueA } from 'module';
+      `,
+      output: format`
+        import { type TypeA, ValueA } from 'module';
+      `,
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
+    {
+      code: format`
+        import { ValueA } from 'module';
+        import { type TypeA } from 'module';
+      `,
+      output: format`
+        import { type TypeA, ValueA } from 'module';
+      `,
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
+    {
+      code: format`
+        import type { TypeA } from 'module-a';
+        import { ValueB } from 'module-b';
+        import { ValueA } from 'module-a';
+      `,
+      output: format`
+        import { type TypeA, ValueA } from 'module-a';
+        import { ValueB } from 'module-b';
+      `,
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
+    {
+      code: format`
+        import { type TypeA, ValueA } from 'module';
+        import { type TypeB } from 'module';
+      `,
+      output: format`
+        import { type TypeA, type TypeB, ValueA } from 'module';
       `,
       errors: [{ messageId: 'importsNotSorted' }]
     }
