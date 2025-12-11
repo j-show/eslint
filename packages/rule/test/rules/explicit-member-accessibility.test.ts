@@ -1,6 +1,6 @@
 import explicitMemberAccessibility, {
-  ExplicitMemberAccessibilityMessageIds,
-  ExplicitMemberAccessibilityOption
+  type ExplicitMemberAccessibilityMessageIds,
+  type ExplicitMemberAccessibilityOption
 } from '../../src/rules/explicit-member-accessibility';
 import { testEntity as originTestEntity, testRun } from '../utils';
 

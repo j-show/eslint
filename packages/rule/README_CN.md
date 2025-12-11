@@ -321,7 +321,8 @@ pnpm run test:vue
 			"warn",
 			{
 				"autoFix": "always",
-				"ignoredNames": ["_"]
+				"ignoredNames": ["^_"],
+				"ignoreJSDoc": true
 			}
 		]
 	}
@@ -329,7 +330,8 @@ pnpm run test:vue
 ```
 
 - `autoFix`：`"always"`（默认）会尝试自动移除未使用的 specifier；设为 `"off"` 时只提示不修复。
-- `ignoredNames`：列出需要忽略的导入名称，常用于 `_` 这类占位符。
+- `ignoredNames`：列出需要忽略的导入名称，支持精确字符串匹配或正则表达式模式（如 `"^_"` 匹配以下划线开头的标识符）。常用于 `_` 这类占位符。
+- `ignoreJSDoc`：`true`（默认）跳过检查 JSDoc 注释中的引用。设为 `false` 时会在判断导入是否被使用时考虑 JSDoc 中的引用（如 `@link`、`@see`、`@type`）。
 
 ---
 
@@ -347,7 +349,8 @@ pnpm run test:vue
 			"warn",
 			{
 				"autoFix": "always",
-				"ignoredNames": ["_"]
+				"ignoredNames": ["^_"],
+				"ignoreFunction": true
 			}
 		]
 	}
@@ -355,7 +358,8 @@ pnpm run test:vue
 ```
 
 - `autoFix`：`"always"` 时直接删除对应声明，`"off"` 仅提示。
-- `ignoredNames`：不会触发规则的变量名白名单（默认 `_`）。
+- `ignoredNames`：不会触发规则的变量名白名单，支持精确字符串匹配或正则表达式模式（如 `"^_"` 匹配以下划线开头的标识符）。默认为 `["^_"]`。
+- `ignoreFunction`：`true`（默认）忽略使用函数表达式、调用表达式或 await 表达式初始化的变量。设为 `false` 时也会检查并删除未使用的函数变量。注意：解构模式中的变量无论此选项如何设置都会被检查。
 
 ---
 

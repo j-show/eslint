@@ -37,7 +37,146 @@ testRun(unusedImport.name, unusedImport.rule, {
         '/** @type {foo} */',
         'const bar = null;'
       ].join('\n'),
-      options: [{ autoFix: 'always', ignoredNames: [] }]
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { foo } from './foo';",
+        '/** @type {foo} */',
+        'const bar = null;'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '/** @param {Foo} param - description */',
+        'function test(param) {}'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '/** @returns {Foo} description */',
+        'function test() { return null; }'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '/** @return {Foo} description */',
+        'function test() { return null; }'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '/** @typedef {Foo} TypeDef */',
+        'const bar = null;'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '/** @link Foo */',
+        'const bar = null;'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '/** {@link Foo} */',
+        'const bar = null;'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '/** @linkcode Foo */',
+        'const bar = null;'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '/** {@linkcode Foo} */',
+        'const bar = null;'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '/** @linkplain Foo */',
+        'const bar = null;'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '/** {@linkplain Foo} */',
+        'const bar = null;'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '/** @see Foo */',
+        'const bar = null;'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '/** @template T extends Foo */',
+        'function test() {}'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Base } from './foo';",
+        '/** @augments Base */',
+        'class Derived {}'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Base } from './foo';",
+        '/** @extends Base */',
+        'class Derived {}'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Interface } from './foo';",
+        '/** @implements Interface */',
+        'class MyClass {}'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Foo, Bar } from './foo';",
+        '/**',
+        ' * @param {Foo} foo - description',
+        ' * @returns {Bar} description',
+        ' */',
+        'function test(foo) { return null; }'
+      ].join('\n'),
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
     },
     {
       code: "import './foo';"
@@ -47,11 +186,11 @@ testRun(unusedImport.name, unusedImport.rule, {
     },
     {
       code: "import { _foo } from './foo';",
-      options: [{ ignoredNames: ['_*'] }]
+      options: [{ ignoredNames: ['^_.*'] }]
     },
     {
       code: "import { Foo } from './foo';",
-      options: [{ ignoredNames: ['/foo/i'] }]
+      options: [{ ignoredNames: ['[fF]oo'] }]
     }
   ],
   invalid: [
@@ -131,7 +270,94 @@ testRun(unusedImport.name, unusedImport.rule, {
       code: "import { _foo, target } from './foo';",
       output: "import { _foo } from './foo';",
       errors: [{ messageId: 'unusedSingleImport' }],
-      options: [{ autoFix: 'always', ignoredNames: ['_*'] }]
+      options: [{ autoFix: 'always', ignoredNames: ['^_.*'] }]
+    },
+    {
+      code: [
+        "import { Foo, Bar } from './foo';",
+        '/** @type {Foo} */',
+        'const foo = null;'
+      ].join('\n'),
+      output: [
+        "import { Foo } from './foo';",
+        '/** @type {Foo} */',
+        'const foo = null;'
+      ].join('\n'),
+      errors: [{ messageId: 'unusedSingleImport' }],
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '/** Some comment without Foo */',
+        'const bar = null;'
+      ].join('\n'),
+      errors: [{ messageId: 'unusedAllImport' }],
+      options: [{ autoFix: 'off', ignoredNames: [] }]
+    },
+    {
+      code: [
+        "import { Foo, Bar } from './foo';",
+        '/** @param {Foo} param */',
+        'function test(param) {}'
+      ].join('\n'),
+      output: [
+        "import { Foo } from './foo';",
+        '/** @param {Foo} param */',
+        'function test(param) {}'
+      ].join('\n'),
+      errors: [{ messageId: 'unusedSingleImport' }],
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: false }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '/** @type {Foo} */',
+        'const bar = null;'
+      ].join('\n'),
+      output: ['/** @type {Foo} */', 'const bar = null;'].join('\n'),
+      errors: [{ messageId: 'unusedAllImport' }],
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: true }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '/** @param {Foo} param */',
+        'function test(param) {}'
+      ].join('\n'),
+      output: ['/** @param {Foo} param */', 'function test(param) {}'].join(
+        '\n'
+      ),
+      errors: [{ messageId: 'unusedAllImport' }],
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: true }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '/** @type {Foo} */',
+        'const bar = null;'
+      ].join('\n'),
+      errors: [{ messageId: 'unusedAllImport' }],
+      options: [{ autoFix: 'off', ignoredNames: [], ignoreJSDoc: true }]
+    },
+    {
+      code: [
+        "import { Foo, Bar } from './foo';",
+        '/** @type {Foo} */',
+        'const bar = null;'
+      ].join('\n'),
+      output: ['/** @type {Foo} */', 'const bar = null;'].join('\n'),
+      errors: [{ messageId: 'unusedAllImport' }],
+      options: [{ autoFix: 'always', ignoredNames: [], ignoreJSDoc: true }]
+    },
+    {
+      code: [
+        "import { Foo } from './foo';",
+        '// Single line comment with Foo',
+        'const bar = null;'
+      ].join('\n'),
+      errors: [{ messageId: 'unusedAllImport' }],
+      options: [{ autoFix: 'off', ignoredNames: [] }]
     }
   ]
 });

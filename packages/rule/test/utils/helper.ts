@@ -1,8 +1,8 @@
 import parser from '@typescript-eslint/parser';
-import { RuleTester } from 'eslint';
-import { TSESLint } from '@typescript-eslint/utils';
-import { flattenDeep } from 'lodash-es';
+import { type TSESLint } from '@typescript-eslint/utils';
 import { stripIndent } from 'common-tags';
+import { RuleTester } from 'eslint';
+import { flattenDeep } from 'lodash-es';
 
 export const createRuleTester = () => {
   const parserOptions: TSESLint.ParserOptions = {

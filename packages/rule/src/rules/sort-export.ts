@@ -1,18 +1,27 @@
 import { AST_NODE_TYPES } from '@typescript-eslint/types';
 import {
   ESLintUtils,
-  JSONSchema,
-  TSESLint,
-  TSESTree
+  type JSONSchema,
+  type TSESLint,
+  type TSESTree
 } from '@typescript-eslint/utils';
 
-import { ReportIssueFunc, RuleDefinition } from './types';
+import { type ReportIssueFunc, type RuleDefinition } from './types';
 import { getContextReportIssue } from './utils';
 
 /**
- * 规则配置：
- * - autoFix：'always' 表示自动重排 export，'off' 仅提示不改动代码。
- * - order：排序方向，默认 asc（字典序 A→Z），desc 可用于生成紧凑别名列表。
+ * 导出排序规则配置
+ *
+ * @property autoFix - 'always' 表示自动重排 export，'off' 仅提示不改动代码
+ * @property order - 排序方向，默认 'asc'（字典序 A→Z），'desc' 可用于生成紧凑别名列表
+ *
+ * @example
+ * ```ts
+ * {
+ *   autoFix: 'always',
+ *   order: 'asc'
+ * }
+ * ```
  */
 export interface SortExportOption {
   autoFix?: 'off' | 'always';
@@ -54,11 +63,51 @@ const DEFAULT_OPTION: Required<SortExportOption> = {
 };
 
 /**
- * 将排序结果拼接为完整文本，原样复用 entry 中保存的注释+语句片段。
+ * 判断两个 export 节点是否可以合并（相同 from 和类型，exportKind 可以不同）
  */
-const buildOutput = (entries: ExportEntry[], lineBreak: string) =>
-  // 直接拼接缓存的文本片段，保持注释/空行原样输出
-  entries.map(entry => entry.text).join(lineBreak);
+const canMerge = (
+  a: SortableExportNode,
+  b: SortableExportNode,
+  sourceCode: TSESLint.SourceCode
+): boolean => {
+  // 必须都是 named export 才能合并
+  if (
+    a.type !== AST_NODE_TYPES.ExportNamedDeclaration ||
+    b.type !== AST_NODE_TYPES.ExportNamedDeclaration
+  ) {
+    return false;
+  }
+
+  // 必须有 source
+  if (!a.source || !b.source) return false;
+
+  // from 路径必须相同
+  if (a.source.value !== b.source.value) return false;
+
+  // exportKind 可以不同，允许合并 export type 和 export
+  // 这样可以生成混合导出语句：export { value, type B, type Z }
+
+  return true;
+};
+
+/**
+ * 获取 export 的合并 key（用于分组）
+ * 对于 named export，只基于模块名分组，不区分 exportKind，以支持混合类型导出
+ */
+const getMergeKey = (
+  node: SortableExportNode,
+  sourceCode: TSESLint.SourceCode
+): string => {
+  if (node.type !== AST_NODE_TYPES.ExportNamedDeclaration || !node.source) {
+    // ExportAllDeclaration 不参与合并，使用完整的 key
+    const kind = node.exportKind ?? 'value';
+    return `${node.type}-${node.source?.value ?? ''}-${kind}`;
+  }
+
+  // named export 只基于模块名分组，允许合并 export type 和 export
+  const moduleName = `${node.source.value}`;
+  return `named-${moduleName}`;
+};
 
 /**
  * 读取 Identifier 名称，兼容 TS AST 中的 Identifier/字符串字面量。
@@ -108,7 +157,7 @@ const getEntryStart = (
     if (comment.range[0] < boundary) break;
 
     const between = sourceCode.text.slice(comment.range[1], currentStart);
-    if (!/^\s*$/.test(between)) break;
+    if (!/^\s*$/u.test(between)) break;
 
     currentStart = comment.range[0];
   }
@@ -144,6 +193,118 @@ const getExportKey = (
 
   return `${kindPrefix}${formPrefix}${moduleName}|${specifiers}`;
 };
+
+/**
+ * 生成合并后的 export 语句文本
+ * 支持混合类型导出：export { value, type B, type Z } from './module'
+ */
+const buildMergedExportText = (
+  nodes: SortableExportNode[],
+  sourceCode: TSESLint.SourceCode,
+  order: SortOrder
+): string => {
+  if (nodes.length === 0) return '';
+  if (nodes.length === 1) return sourceCode.getText(nodes[0]);
+
+  const firstNode = nodes[0];
+  if (
+    firstNode.type !== AST_NODE_TYPES.ExportNamedDeclaration ||
+    !firstNode.source
+  ) {
+    // 不应该到达这里，但为了类型安全
+    return sourceCode.getText(firstNode);
+  }
+
+  // 分别收集 type 和 value 的 specifiers
+  const typeSpecifiers: Array<{
+    specifier: TSESTree.ExportSpecifier;
+    name: string;
+  }> = [];
+  const valueSpecifiers: Array<{
+    specifier: TSESTree.ExportSpecifier;
+    name: string;
+  }> = [];
+
+  for (const node of nodes) {
+    if (
+      node.type === AST_NODE_TYPES.ExportNamedDeclaration &&
+      node.specifiers
+    ) {
+      const isType = node.exportKind === 'type';
+      for (const specifier of node.specifiers) {
+        const name = getExportedName(specifier, sourceCode);
+        const entry = { specifier, name };
+
+        if (isType) {
+          // 检查是否已存在（避免重复）
+          if (!typeSpecifiers.some(e => e.name === name)) {
+            typeSpecifiers.push(entry);
+          }
+        } else {
+          if (!valueSpecifiers.some(e => e.name === name)) {
+            valueSpecifiers.push(entry);
+          }
+        }
+      }
+    }
+  }
+
+  // 排序 specifiers
+  const sortByName = (a: { name: string }, b: { name: string }) =>
+    order === 'asc'
+      ? a.name.localeCompare(b.name)
+      : b.name.localeCompare(a.name);
+
+  typeSpecifiers.sort(sortByName);
+  valueSpecifiers.sort(sortByName);
+
+  // 生成 specifier 文本
+  const formatSpecifier = (spec: TSESTree.ExportSpecifier) => {
+    const local = spec.local;
+    const exported = spec.exported;
+    const localName =
+      local.type === AST_NODE_TYPES.Identifier
+        ? local.name
+        : sourceCode.getText(local);
+    const exportedName =
+      exported.type === AST_NODE_TYPES.Identifier
+        ? exported.name
+        : sourceCode.getText(exported);
+
+    if (localName === exportedName) {
+      return exportedName;
+    }
+    return `${localName} as ${exportedName}`;
+  };
+
+  // 合并所有 specifiers：先 value，后 type（使用 type 前缀）
+  const allSpecifierTexts: string[] = [];
+  for (const { specifier } of valueSpecifiers) {
+    allSpecifierTexts.push(formatSpecifier(specifier));
+  }
+  for (const { specifier } of typeSpecifiers) {
+    allSpecifierTexts.push(`type ${formatSpecifier(specifier)}`);
+  }
+
+  const specifiersText = allSpecifierTexts.join(', ');
+  const moduleName = sourceCode.getText(firstNode.source);
+
+  // 如果只有 type，使用 export type（去掉 type 前缀）；否则使用 export（保留 type 前缀）
+  if (valueSpecifiers.length === 0 && typeSpecifiers.length > 0) {
+    // 去掉所有 "type " 前缀
+    const typeOnlyText = specifiersText.replace(/\btype /gu, '');
+    return `export type { ${typeOnlyText} } from ${moduleName};`;
+  }
+
+  return `export { ${specifiersText} } from ${moduleName};`;
+};
+
+/**
+ * 将排序结果拼接为完整文本，原样复用 entry 中保存的注释+语句片段。
+ */
+const buildOutput = (entries: ExportEntry[], lineBreak: string) =>
+  // 直接拼接缓存的文本片段，保持注释/空行原样输出
+  entries.map(entry => entry.text).join(lineBreak);
 
 /**
  * 比较两个 export entry 的顺序；若 key 相同则保持原始顺序避免抖动。
@@ -212,6 +373,112 @@ const getSortableExport = (
 };
 
 /**
+ * 合并相同 from 的导出 entries
+ */
+const mergeEntries = (
+  entries: ExportEntry[],
+  sourceCode: TSESLint.SourceCode,
+  options: NormalizedOption
+): ExportEntry[] => {
+  // 按 mergeKey 分组
+  const groups = new Map<string, ExportEntry[]>();
+  for (const entry of entries) {
+    const key = getMergeKey(entry.node, sourceCode);
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key)!.push(entry);
+  }
+
+  const mergedEntries: ExportEntry[] = [];
+
+  for (const [_, group] of groups) {
+    if (group.length === 1) {
+      // 只有一个，直接添加
+      mergedEntries.push(group[0]);
+    } else {
+      // 检查是否可以合并（必须都是 named export 且可以合并）
+      const firstNode = group[0].node;
+      const canMergeAll = group.every(entry =>
+        canMerge(firstNode, entry.node, sourceCode)
+      );
+
+      if (
+        canMergeAll &&
+        firstNode.type === AST_NODE_TYPES.ExportNamedDeclaration
+      ) {
+        // 可以合并，创建一个合并后的 entry
+        // 分别收集 type 和 value 的 specifier 名称
+        const typeNames: string[] = [];
+        const valueNames: string[] = [];
+
+        for (const entry of group) {
+          if (
+            entry.node.type === AST_NODE_TYPES.ExportNamedDeclaration &&
+            entry.node.specifiers
+          ) {
+            const isType = entry.node.exportKind === 'type';
+            for (const specifier of entry.node.specifiers) {
+              const name = getExportedName(specifier, sourceCode);
+              if (isType && !typeNames.includes(name)) {
+                typeNames.push(name);
+              } else if (!isType && !valueNames.includes(name)) {
+                valueNames.push(name);
+              }
+            }
+          }
+        }
+
+        // 排序
+        const sortNames = (names: string[]) =>
+          names.sort((a, b) =>
+            options.order === 'asc' ? a.localeCompare(b) : b.localeCompare(a)
+          );
+        sortNames(typeNames);
+        sortNames(valueNames);
+
+        // 生成合并后的 key（用于排序）
+        // 如果同时有 type 和 value，使用 value: 作为前缀（因为最终输出是 export，不是 export type）
+        const moduleName = `${firstNode.source?.value ?? ''}`;
+        const hasValue = valueNames.length > 0;
+
+        const kindPrefix = hasValue ? 'value:' : 'type:';
+        const allNames = hasValue ? [...valueNames, ...typeNames] : typeNames;
+        const mergedKey = `${kindPrefix}named:${moduleName}|${allNames.join(
+          ','
+        )}`;
+
+        const mergedExportText = buildMergedExportText(
+          group.map(e => e.node),
+          sourceCode,
+          options.order
+        );
+        // 使用第一个 entry 的 start 和注释
+        const firstEntry = group[0];
+        // 保留第一个 entry 的前导注释和空白
+        const leadingText = sourceCode.text.slice(
+          firstEntry.start,
+          firstNode.range[0]
+        );
+        const mergedText = leadingText + mergedExportText;
+        mergedEntries.push({
+          node: firstNode,
+          key: mergedKey,
+          start: firstEntry.start,
+          originalIndex: firstEntry.originalIndex,
+          text: mergedText
+        });
+      } else {
+        // 不能合并，保持原样
+        mergedEntries.push(...group);
+      }
+    }
+  }
+
+  return mergedEntries;
+};
+
+/**
  * 对连续 export 块执行排序，若发现顺序不一致则触发一次 report。
  * @param nodes 待排序的 export 节点集合
  * @param boundary 块起点，用于获取前导注释/空白
@@ -228,21 +495,32 @@ const sortExportBlock = (
   const entries = collectEntries(nodes, boundary, sourceCode);
   if (entries.length < 2) return;
 
-  const sortedEntries = [...entries].sort((a, b) =>
+  // 先合并相同 from 的导出
+  const mergedEntries = mergeEntries(entries, sourceCode, options);
+
+  // 对合并后的 entries 进行排序
+  const sortedEntries = [...mergedEntries].sort((a, b) =>
     compareEntries(a, b, options.order)
   );
 
-  // 逐个比较节点引用，只有顺序不同才需要触发 report/fix
-  const needsReorder = entries.some(
-    (entry, index) => entry.node !== sortedEntries[index]?.node
-  );
-  if (!needsReorder) return;
+  // 检查是否需要重新排序或合并
+  // 1. 如果有合并发生（数量减少），需要修复
+  // 2. 如果合并后的 entries 顺序与排序后的顺序不同，需要修复
+  const hasMerging = mergedEntries.length !== entries.length;
+  const needsReordering = mergedEntries.some((entry, index) => {
+    const sorted = sortedEntries[index];
+    if (!sorted) return true;
+    // 比较 key 和 text，因为合并后 node 可能不同
+    return entry.key !== sorted.key || entry.text !== sorted.text;
+  });
+
+  const needsChange = hasMerging || needsReordering;
+
+  if (!needsChange) return;
 
   const blockStart = entries[0].start;
   const blockEnd = entries[entries.length - 1].node.range[1];
-  const diffEntry =
-    entries.find((entry, index) => entry.node !== sortedEntries[index]?.node) ??
-    entries[0];
+  const diffEntry = entries[0];
 
   reportIssue(
     'exportsNotSorted',
@@ -309,9 +587,7 @@ const create: ESLintUtils.RuleCreateAndOptions<
   [SortExportOption],
   SortExportMessageIds
 >['create'] = (context, defaultOptions) => {
-  const option = (context.options?.[0] ||
-    defaultOptions?.[0] ||
-    DEFAULT_OPTION) as SortExportOption;
+  const option = context.options?.[0] || defaultOptions?.[0] || DEFAULT_OPTION;
 
   const sourceCode = context.getSourceCode();
 

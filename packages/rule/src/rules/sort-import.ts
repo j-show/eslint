@@ -1,23 +1,40 @@
 import { AST_NODE_TYPES } from '@typescript-eslint/types';
 import {
   ESLintUtils,
-  JSONSchema,
-  TSESLint,
-  TSESTree
+  type JSONSchema,
+  type TSESLint,
+  type TSESTree
 } from '@typescript-eslint/utils';
 
-import { ReportIssueFunc, RuleDefinition } from './types';
+import { type ReportIssueFunc, type RuleDefinition } from './types';
 import { getContextReportIssue } from './utils';
 
 /**
- * 规则配置：
- * - autoFix：'always' 直接重排 import，'off' 仅提示。
- * - order：组内排序方向，asc 默认按字典序 A→Z，desc 则反向。
- * - groups：二维正则字符串，按来源划分层级，例如第三方/别名/相对路径。
- * - clusters：与 groups 等长的数字数组，决定组内行间距（取值见下方注释）。
+ * 导入排序规则配置
+ *
+ * @property autoFix - 是否自动修复，true 直接重排 import，false 仅提示
+ * @property order - 组内排序方向，'asc' 默认按字典序 A→Z，'desc' 则反向
+ * @property groups - 二维正则字符串数组，按来源划分层级，例如第三方/别名/相对路径
+ * @property clusters - 与 groups 等长的数字数组，决定组内行间距（0=紧凑，1=每行后空一行，2=每行前后各空一行）
+ *
+ * @example
+ * ```ts
+ * {
+ *   autoFix: true,
+ *   order: 'asc',
+ *   groups: [
+ *     ['^node:'],
+ *     ['^@?[a-zA-Z]'],
+ *     ['^@/'],
+ *     ['^\\.\\./'],
+ *     ['^\\./']
+ *   ],
+ *   clusters: [0, 1, 0, 0, 0]
+ * }
+ * ```
  */
 export interface SortImportOption {
-  autoFix?: 'off' | 'always';
+  autoFix?: boolean;
   order?: 'asc' | 'desc';
   groups?: string[][];
   clusters?: number[];
@@ -75,6 +92,13 @@ const DEFAULT_GROUPS: string[][] = [
   ['^\\./']
 ];
 
+const DEFAULT_OPTION: Required<SortImportOption> = {
+  autoFix: true,
+  order: 'asc',
+  groups: DEFAULT_GROUPS.map(group => [...group]),
+  clusters: DEFAULT_GROUPS.map(() => 0)
+};
+
 /**
  * 若用户提供了 groups，就直接沿用；否则复制默认模板，避免在后续流程中意外修改常量。
  * @param groups 用户传入的二维正则字符串
@@ -124,7 +148,7 @@ const compileGroups = (groups: string[][]): RegExp[][] =>
           return null;
         }
       })
-      .filter((regex): regex is RegExp => Boolean(regex))
+      .filter((regex): regex is RegExp => regex !== null)
   );
 
 /**
@@ -149,7 +173,7 @@ const collectAttachedComments = (
 
     const between = sourceCode.text.slice(comment.range[1], currentStart);
     // 中间出现非空字符则说明注释不属于该 import
-    if (!/^\s*$/.test(between)) break;
+    if (!/^\s*$/u.test(between)) break;
 
     result.unshift(comment);
     currentStart = comment.range[0];
@@ -175,8 +199,8 @@ const hasDetachedLeadingLineComment = (
   const lastComment = comments[comments.length - 1];
   if (lastComment.range[0] < boundary) {
     const between = sourceCode.text.slice(lastComment.range[1], node.range[0]);
-    // 只有独立的行注释且中间只有空白才算“脱离”注释
-    return lastComment.type === 'Line' && /^\s*$/.test(between);
+    // 只有独立的行注释且中间只有空白才算"脱离"注释
+    return lastComment.type === 'Line' && /^\s*$/u.test(between);
   }
 
   return false;
@@ -344,6 +368,332 @@ const buildOutput = (entries: ImportEntry[], lineBreak: string) => {
 };
 
 /**
+ * Specifier 包装类型，用于跟踪类型导入信息
+ */
+type SpecifierWithType<
+  T extends TSESTree.ImportSpecifier | TSESTree.ImportDefaultSpecifier
+> = {
+  spec: T;
+  isType: boolean;
+};
+
+/**
+ * 检查导入是否可以合并：
+ * - 具名导入和默认导入可以合并
+ * - 命名空间导入和纯副作用导入不能合并
+ */
+const canMergeImport = (node: TSESTree.ImportDeclaration): boolean => {
+  // 纯副作用导入不能合并
+  if (node.specifiers.length === 0) return false;
+
+  // 检查是否有命名空间导入，有则不能合并
+  const hasNamespace = node.specifiers.some(
+    spec => spec.type === AST_NODE_TYPES.ImportNamespaceSpecifier
+  );
+  if (hasNamespace) return false;
+
+  return true;
+};
+
+/**
+ * 去重 specifiers，按本地名称去重，保留第一个出现的
+ */
+const deduplicateSpecifiers = <
+  T extends TSESTree.ImportSpecifier | TSESTree.ImportDefaultSpecifier
+>(
+  specifiers: SpecifierWithType<T>[]
+): Map<string, SpecifierWithType<T>> => {
+  const unique = new Map<string, SpecifierWithType<T>>();
+  for (const item of specifiers) {
+    const localName = item.spec.local.name;
+    if (!unique.has(localName)) {
+      unique.set(localName, item);
+    }
+  }
+  return unique;
+};
+
+/**
+ * 收集导入节点中的所有 specifiers，区分类型导入和值导入
+ */
+const collectSpecifiers = (
+  nodes: TSESTree.ImportDeclaration[]
+): {
+  defaultSpecifiers: SpecifierWithType<TSESTree.ImportDefaultSpecifier>[];
+  namedSpecifiers: SpecifierWithType<TSESTree.ImportSpecifier>[];
+} => {
+  const defaultSpecifiers: SpecifierWithType<TSESTree.ImportDefaultSpecifier>[] =
+    [];
+  const namedSpecifiers: SpecifierWithType<TSESTree.ImportSpecifier>[] = [];
+
+  for (const node of nodes) {
+    const isDeclarationType = node.importKind === 'type';
+
+    for (const spec of node.specifiers) {
+      if (spec.type === AST_NODE_TYPES.ImportDefaultSpecifier) {
+        defaultSpecifiers.push({
+          spec,
+          isType: isDeclarationType
+        });
+      } else if (spec.type === AST_NODE_TYPES.ImportSpecifier) {
+        namedSpecifiers.push({
+          spec,
+          isType: spec.importKind === 'type' || isDeclarationType
+        });
+      }
+    }
+  }
+
+  return { defaultSpecifiers, namedSpecifiers };
+};
+
+/**
+ * 判断是否应该使用 import type 前缀
+ */
+const shouldUseTypePrefix = (
+  uniqueDefaultSpecifiers: Map<
+    string,
+    SpecifierWithType<TSESTree.ImportDefaultSpecifier>
+  >,
+  uniqueNamedSpecifiers: Map<
+    string,
+    SpecifierWithType<TSESTree.ImportSpecifier>
+  >
+): boolean => {
+  // 判断是否所有导入都是类型
+  let allDefaultAreType = true;
+  let defaultIsType = false;
+
+  if (uniqueDefaultSpecifiers.size > 0) {
+    for (const item of uniqueDefaultSpecifiers.values()) {
+      if (defaultIsType === false) {
+        defaultIsType = item.isType;
+      }
+      if (!item.isType) {
+        allDefaultAreType = false;
+        break;
+      }
+    }
+  }
+
+  let allNamedAreType = true;
+  if (uniqueNamedSpecifiers.size > 0) {
+    for (const item of uniqueNamedSpecifiers.values()) {
+      if (!item.isType) {
+        allNamedAreType = false;
+        break;
+      }
+    }
+  }
+
+  const isAllType =
+    (uniqueDefaultSpecifiers.size === 0 || allDefaultAreType) &&
+    (uniqueNamedSpecifiers.size === 0 || allNamedAreType);
+
+  // 如果默认导入是类型，即使有值导入的具名导入，也使用 import type
+  return isAllType || (defaultIsType && uniqueDefaultSpecifiers.size > 0);
+};
+
+/**
+ * 构建具名导入的文本部分
+ */
+const buildNamedSpecifiersText = (
+  uniqueNamedSpecifiers: Map<
+    string,
+    SpecifierWithType<TSESTree.ImportSpecifier>
+  >,
+  useTypePrefix: boolean
+): string => {
+  // 分离类型导入和值导入，类型导入在前
+  const typeSpecs: SpecifierWithType<TSESTree.ImportSpecifier>[] = [];
+  const valueSpecs: SpecifierWithType<TSESTree.ImportSpecifier>[] = [];
+
+  for (const entry of uniqueNamedSpecifiers.values()) {
+    (entry.isType ? typeSpecs : valueSpecs).push(entry);
+  }
+
+  // 分别排序
+  typeSpecs.sort((a, b) => a.spec.local.name.localeCompare(b.spec.local.name));
+  valueSpecs.sort((a, b) => a.spec.local.name.localeCompare(b.spec.local.name));
+
+  const allSpecs = [...typeSpecs, ...valueSpecs];
+
+  return allSpecs
+    .map(({ spec, isType }) => {
+      const importedName =
+        spec.imported.type === AST_NODE_TYPES.Identifier
+          ? spec.imported.name
+          : spec.imported.value;
+
+      let specText = '';
+      // 如果是类型导入且没有使用 import type 前缀，使用 inline type
+      if (isType && !useTypePrefix) {
+        specText += 'type ';
+      }
+
+      if (importedName !== spec.local.name) {
+        specText += `${importedName} as ${spec.local.name}`;
+      } else {
+        specText += spec.local.name;
+      }
+
+      return specText;
+    })
+    .join(', ');
+};
+
+/**
+ * 构建合并后的 import 语句文本
+ */
+const buildMergedImportText = (
+  firstEntry: ImportEntry,
+  uniqueDefaultSpecifiers: Map<
+    string,
+    SpecifierWithType<TSESTree.ImportDefaultSpecifier>
+  >,
+  uniqueNamedSpecifiers: Map<
+    string,
+    SpecifierWithType<TSESTree.ImportSpecifier>
+  >,
+  sourceCode: TSESLint.SourceCode
+): string => {
+  const sourceValue = firstEntry.node.source.value ?? '';
+  const sourceText = sourceCode.getText(firstEntry.node.source);
+  const quoteMatch = sourceText.match(/^(['"])/);
+  const quote = quoteMatch ? quoteMatch[1] : "'";
+
+  const useTypePrefix = shouldUseTypePrefix(
+    uniqueDefaultSpecifiers,
+    uniqueNamedSpecifiers
+  );
+
+  let importText = useTypePrefix ? 'import type ' : 'import ';
+
+  // 默认导入
+  if (uniqueDefaultSpecifiers.size > 0) {
+    // 获取第一个默认导入（Map 的迭代顺序是插入顺序）
+    const firstDefault = uniqueDefaultSpecifiers.values().next().value;
+    if (firstDefault) {
+      importText += firstDefault.spec.local.name;
+      if (uniqueNamedSpecifiers.size > 0) {
+        importText += ', ';
+      }
+    }
+  }
+
+  // 具名导入
+  if (uniqueNamedSpecifiers.size > 0) {
+    importText += '{ ';
+    importText += buildNamedSpecifiersText(
+      uniqueNamedSpecifiers,
+      useTypePrefix
+    );
+    importText += ' }';
+  }
+
+  importText += ` from ${quote}${sourceValue}${quote};`;
+
+  return importText;
+};
+
+/**
+ * 合并来自同一个模块的导入语句。
+ * 将多个 ImportEntry 合并为一个，生成合并后的 import 语句文本。
+ */
+const mergeEntriesBySource = (
+  entries: ImportEntry[],
+  sourceCode: TSESLint.SourceCode
+): ImportEntry[] => {
+  // 按模块源分组
+  const sourceMap = new Map<string, ImportEntry[]>();
+  const nonMergeableEntries: ImportEntry[] = [];
+
+  for (const entry of entries) {
+    const key = getSortKey(entry.node);
+
+    // 不能合并的导入单独处理
+    if (!canMergeImport(entry.node) || entry.hasLeadingComment) {
+      nonMergeableEntries.push(entry);
+      continue;
+    }
+
+    const group = sourceMap.get(key);
+    if (group) {
+      group.push(entry);
+    } else {
+      sourceMap.set(key, [entry]);
+    }
+  }
+
+  const mergedEntries: ImportEntry[] = [];
+
+  // 处理可以合并的导入
+  for (const [, groupEntries] of sourceMap.entries()) {
+    if (groupEntries.length <= 1) {
+      // 只有一个导入，无需合并
+      mergedEntries.push(...groupEntries);
+      continue;
+    }
+
+    // 合并多个导入
+    const firstEntry = groupEntries[0];
+    const nodes = groupEntries.map(e => e.node);
+
+    // 收集所有 specifiers
+    const { defaultSpecifiers, namedSpecifiers } = collectSpecifiers(nodes);
+
+    // 去重
+    const uniqueDefaultSpecifiers = deduplicateSpecifiers(defaultSpecifiers);
+    const uniqueNamedSpecifiers = deduplicateSpecifiers(namedSpecifiers);
+
+    // 构建合并后的 import 语句文本
+    const importText = buildMergedImportText(
+      firstEntry,
+      uniqueDefaultSpecifiers,
+      uniqueNamedSpecifiers,
+      sourceCode
+    );
+
+    // 保留第一个 entry 的注释和元数据
+    const attachedComments = collectAttachedComments(
+      firstEntry.node,
+      sourceCode,
+      firstEntry.start
+    );
+    const prefixText = attachedComments.length
+      ? sourceCode.text.slice(
+          attachedComments[0].range[0],
+          firstEntry.node.range[0]
+        )
+      : '';
+
+    const mergedText = `${prefixText}${importText}`;
+    const mergedStart = attachedComments.length
+      ? attachedComments[0].range[0]
+      : firstEntry.node.range[0];
+
+    // 创建合并后的 entry（使用第一个 node，因为我们需要一个有效的 AST 节点）
+    mergedEntries.push({
+      node: firstEntry.node,
+      text: mergedText,
+      key: firstEntry.key,
+      groupIndex: firstEntry.groupIndex,
+      clusterIndex: firstEntry.clusterIndex,
+      originalIndex: firstEntry.originalIndex,
+      start: mergedStart,
+      hasLeadingComment: firstEntry.hasLeadingComment
+    });
+  }
+
+  // 合并结果：先放合并后的，再放不能合并的
+  // 按原始索引排序，保持相对顺序
+  const allEntries = [...mergedEntries, ...nonMergeableEntries];
+  allEntries.sort((a, b) => a.originalIndex - b.originalIndex);
+
+  return allEntries;
+};
+
+/**
  * 只对不带独立注释的连续区块进行排序，确保手写注释区块保持原位。
  */
 const sortEntries = (entries: ImportEntry[], order: SortOrder) => {
@@ -358,7 +708,7 @@ const sortEntries = (entries: ImportEntry[], order: SortOrder) => {
     }
 
     let end = cursor;
-    // 将连续的“可排序”区块挑出来，单独排序后再放回去
+    // 将连续的"可排序"区块挑出来，单独排序后再放回去
     while (end < entries.length && !entries[end].hasLeadingComment) {
       end += 1;
     }
@@ -397,13 +747,22 @@ const sortImportInProgram = (
   if (importNodes.length < 2) return;
 
   // 将节点转换为 ImportEntry 以便比较/重排
-  const entries = collectEntries(importNodes, sourceCode, options);
+  let entries = collectEntries(importNodes, sourceCode, options);
   if (entries.length < 2) return;
+
+  // 记录原始 block 范围（合并前）
+  const originalBlockStart = entries[0].start;
+  const originalBlockEnd = entries[entries.length - 1].node.range[1];
+
+  // 合并来自同一个模块的导入
+  entries = mergeEntriesBySource(entries, sourceCode);
+  if (entries.length < 1) return;
 
   const sortedEntries = sortEntries(entries, options.order);
 
-  const blockStart = entries[0].start;
-  const blockEnd = entries[entries.length - 1].node.range[1];
+  // 使用原始 block 范围，确保覆盖所有原始 import 语句
+  const blockStart = originalBlockStart;
+  const blockEnd = originalBlockEnd;
   const actualText = sourceCode.text.slice(blockStart, blockEnd);
   const expectedText = buildOutput(sortedEntries, options.lineBreak);
 
@@ -451,12 +810,7 @@ const create: ESLintUtils.RuleCreateAndOptions<
    * 8. 返回 AST 监听器，仅处理 Program 末尾时机（:exit），批量处理所有导入语句。
    *    - 出口统一调用 sortImportInProgram，实际完成排序主逻辑，必要时自动修复。
    */
-  const option = (context.options?.[0] ||
-    defaultOptions?.[0] || {
-      autoFix: 'always',
-      order: 'asc',
-      groups: DEFAULT_GROUPS
-    }) as SortImportOption;
+  const option = context.options?.[0] || defaultOptions?.[0] || DEFAULT_OPTION;
 
   // 获取源码访问对象，后续用于操作与分析文本内容
   const sourceCode = context.getSourceCode();
@@ -480,7 +834,7 @@ const create: ESLintUtils.RuleCreateAndOptions<
 
   // 汇总成最终使用的配置，便于排序和修复逻辑直接消费
   const realOption: NormalizedOption = {
-    autoFix: (option.autoFix || 'always') === 'always',
+    autoFix: option.autoFix ?? DEFAULT_OPTION.autoFix,
     order: option.order === 'desc' ? 'desc' : 'asc',
     groups: compileGroups(normalizedGroups),
     clusters: normalizedClusters,
@@ -499,7 +853,7 @@ const create: ESLintUtils.RuleCreateAndOptions<
 };
 
 const SchemaOverrideProperties: Record<string, JSONSchema.JSONSchema4> = {
-  autoFix: { type: 'string', enum: ['off', 'always'] },
+  autoFix: { type: 'boolean' },
   order: { type: 'string', enum: ['asc', 'desc'] },
   groups: {
     type: 'array',
@@ -542,14 +896,7 @@ const rule = ESLintUtils.RuleCreator(
       }
     ]
   },
-  defaultOptions: [
-    {
-      autoFix: 'always',
-      order: 'asc',
-      groups: DEFAULT_GROUPS.map(group => [...group]),
-      clusters: DEFAULT_GROUPS.map(() => 0)
-    }
-  ],
+  defaultOptions: [DEFAULT_OPTION],
   create
 }) as RuleDefinition;
 
