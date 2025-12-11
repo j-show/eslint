@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-jshow",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "ESLint plugin for jshow",
   "keywords": [
     "eslint",
