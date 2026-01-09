@@ -13,7 +13,8 @@ const inputs = {
   node: resolve('src/node.ts'),
   react: resolve('src/react.ts'),
   typescript: resolve('src/typescript.ts'),
-  vue: resolve('src/vue.ts')
+  vue: resolve('src/vue.ts'),
+  prettier: resolve('src/prettier.ts')
 };
 
 const externals = new Set<string>([

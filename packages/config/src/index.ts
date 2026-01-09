@@ -2,6 +2,7 @@ import { type Linter } from 'eslint';
 
 import browser from './browser';
 import node from './node';
+import prettier from './prettier';
 import react from './react';
 import typescript from './typescript';
 import vue from './vue';
@@ -29,12 +30,15 @@ type ConfigKey = 'typescript' | 'browser' | 'node' | 'react' | 'vue';
  * ];
  * ```
  */
-const config: Record<ConfigKey, Linter.Config[]> = {
+const config: Record<ConfigKey, Linter.Config[]> & {
+  prettier: typeof prettier;
+} = {
   typescript,
   browser,
   node,
   react,
-  vue
+  vue,
+  prettier
 };
 
 export default config;

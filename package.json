@@ -18,8 +18,7 @@
     "pnpm": ">=10"
   },
   "scripts": {
-    "prepare": "husky install",
-    "precommit": "lint-staged",
+    "prepare": "husky",
     "clean": "rm -rf ./dist && rm -rf ./packages/**/dist",
     "build": "pnpm clean && pnpm build:rule && pnpm build:config",
     "build:config": "pnpm -F eslint-config-jshow build",

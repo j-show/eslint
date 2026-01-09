@@ -175,9 +175,15 @@ importers:
       eslint:
         specifier: ^9
         version: 9.39.1
+      eslint-config-prettier:
+        specifier: latest
+        version: 10.1.8(eslint@9.39.1)
       eslint-plugin-jshow:
         specifier: workspace:*
         version: link:../rule
+      eslint-plugin-prettier:
+        specifier: latest
+        version: 5.5.4(eslint-config-prettier@10.1.8(eslint@9.39.1))(eslint@9.39.1)(prettier@3.0.0)
       eslint-plugin-react:
         specifier: ^7.37.5
         version: 7.37.5(eslint@9.39.1)
@@ -190,6 +196,9 @@ importers:
       globals:
         specifier: ^16.5.0
         version: 16.5.0
+      prettier:
+        specifier: '>=3'
+        version: 3.0.0
       typescript-eslint:
         specifier: ^8
         version: 8.48.0(eslint@9.39.1)(typescript@5.8.2)

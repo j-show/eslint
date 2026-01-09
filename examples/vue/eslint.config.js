@@ -1,31 +1,20 @@
+import prettierConfig from 'eslint-config-jshow/prettier';
 import jshowConfig from 'eslint-config-jshow/vue';
-import prettierConfig from 'eslint-config-prettier';
-import prettierRecommended from 'eslint-plugin-prettier/recommended';
+
+const prettierConfigs = await prettierConfig(process.cwd());
 
 export default [
   ...jshowConfig,
-  prettierConfig,
-  prettierRecommended,
+  ...prettierConfigs,
   {
     ignores: [
       'dist',
       'node_modules',
       'build',
       'coverage',
-      'dist-ssr',
       'public',
       'static',
-      'test',
-      'tests',
-      'tmp',
-      'temp',
-      'tmp/**',
-      'temp/**'
+      'test'
     ]
   },
-  {
-    rules: {
-      'prettier/prettier': 'error'
-    }
-  }
 ];

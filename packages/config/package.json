@@ -43,6 +43,11 @@
       "types": "./dist/vue.d.ts",
       "import": "./dist/vue.mjs",
       "require": "./dist/vue.cjs"
+    },
+    "./prettier": {
+      "types": "./dist/prettier.d.ts",
+      "import": "./dist/prettier.mjs",
+      "require": "./dist/prettier.cjs"
     }
   },
   "scripts": {
@@ -50,7 +55,8 @@
   },
   "peerDependencies": {
     "eslint": "^9",
-    "typescript-eslint": "^8"
+    "typescript-eslint": "^8",
+    "prettier": ">=3"
   },
   "dependencies": {
     "@eslint/js": "^9",
@@ -61,6 +67,9 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-vue": "^10.6.2",
+    "prettier": ">=3",
+    "eslint-config-prettier": "latest",
+    "eslint-plugin-prettier": "latest",
     "globals": "^16.5.0",
     "typescript-eslint": "^8",
     "vue-eslint-parser": "^10.2.0"
