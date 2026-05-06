@@ -6,7 +6,7 @@ import {
   type TSESTree
 } from '@typescript-eslint/utils';
 
-import { type ReportIssueFunc, type RuleDefinition } from './types';
+import { type ReportIssueFunc } from './types';
 import { getContextReportIssue } from './utils';
 
 /**
@@ -28,16 +28,22 @@ export interface SortExportOption {
   order?: 'asc' | 'desc';
 }
 
+/**
+ * 本规则 `context.report` 使用的消息 ID 联合类型。
+ */
 export type SortExportMessageIds = 'exportsNotSorted';
 
 type ReportIssue = ReportIssueFunc<SortExportMessageIds>;
 
-/** 内部复用的排序方向枚举，仅保留有效取值。 */
+/**
+ * 导出语句组内字典序方向。
+ */
 type SortOrder = 'asc' | 'desc';
 
 /**
- * 归一化后的配置，便于核心逻辑直接使用布尔/枚举。
- * lineBreak 会根据源码实际换行符决定替换文本，避免混合 CRLF/LF。
+ * 归一化后的运行时配置。
+ *
+ * `lineBreak` 与源码一致，避免 autofix 在 Windows 仓库中引入 LF-only 片段。
  */
 interface NormalizedOption {
   autoFix: boolean;
@@ -45,10 +51,16 @@ interface NormalizedOption {
   lineBreak: string;
 }
 
+/**
+ * 参与排序的 `export` 语句节点联合类型（仅 `*` 重导出与具名重导出）。
+ */
 type SortableExportNode =
   | TSESTree.ExportAllDeclaration
   | TSESTree.ExportNamedDeclaration;
 
+/**
+ * 单条 export 在排序流水线中的中间表示。
+ */
 interface ExportEntry {
   node: SortableExportNode;
   key: string;
@@ -355,6 +367,14 @@ const collectEntries = (
   return entries;
 };
 
+/**
+ * 从任意 `Statement` 中筛出可参与本规则排序的 export 节点。
+ *
+ * 显式跳过 `export const` 等带 `declaration` 的语句：其语义与纯重导出不同，强行排序风险高。
+ *
+ * @param node - `Program.body` 中的单条语句
+ * @returns 可排序节点；否则 `null`
+ */
 const getSortableExport = (
   node: TSESTree.Statement
 ): SortableExportNode | null => {
@@ -638,6 +658,6 @@ const rule = ESLintUtils.RuleCreator(
   },
   defaultOptions: [DEFAULT_OPTION],
   create
-}) as RuleDefinition;
+});
 
 export default { name, rule };

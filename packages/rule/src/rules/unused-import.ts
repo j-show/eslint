@@ -12,7 +12,7 @@ import {
   type TSESTree
 } from '@typescript-eslint/utils';
 
-import { type ReportIssueFunc, type RuleDefinition } from './types';
+import { type ReportIssueFunc } from './types';
 import { getContextReportIssue, isIgnoredName, stringToRegExp } from './utils';
 
 /**
@@ -37,6 +37,9 @@ export interface UnusedImportOption {
   ignoreJSDoc?: boolean;
 }
 
+/**
+ * 本规则 `context.report` 使用的消息 ID 联合类型。
+ */
 export type UnusedImportMessageIds = 'unusedSingleImport' | 'unusedAllImport';
 
 type ReportIssue = ReportIssueFunc<UnusedImportMessageIds>;
@@ -413,6 +416,6 @@ const rule = ESLintUtils.RuleCreator(
   },
   defaultOptions: [DEFAULT_OPTION],
   create
-}) as RuleDefinition;
+});
 
 export default { name, rule };

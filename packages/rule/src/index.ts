@@ -1,3 +1,5 @@
+import { type ESLint } from 'eslint';
+
 import { name, version } from '../package.json';
 
 import { rules } from './rules';
@@ -27,4 +29,4 @@ import { rules } from './rules';
 export default {
   meta: { name, version },
   rules
-};
+} as ESLint.Plugin;

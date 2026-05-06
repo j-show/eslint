@@ -1,3 +1,5 @@
+import { type ESLint } from 'eslint';
+
 import explicitMemberAccessibility from './explicit-member-accessibility';
 import sortExport from './sort-export';
 import sortImport from './sort-import';
@@ -33,4 +35,4 @@ export const rules = {
   [sortImport.name]: sortImport.rule,
   [unusedImport.name]: unusedImport.rule,
   [unusedVariable.name]: unusedVariable.rule
-};
+} as unknown as ESLint.Plugin['rules'];

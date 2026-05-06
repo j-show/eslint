@@ -1,6 +1,9 @@
 import typescriptParser from '@typescript-eslint/parser';
+
 import { type Linter } from 'eslint';
+
 import pluginVue from 'eslint-plugin-vue';
+
 import globals from 'globals';
 import vueParser from 'vue-eslint-parser';
 
@@ -37,6 +40,25 @@ const legacyConfigs: Linter.Config[] = buildCompat(
   ...browserConfigs,
   ...vueRecommendeds,
   {
+    files: ['**/*.ts'],
+    rules: {
+      'jshow/sort-import': [
+        'error',
+        {
+          groups: [
+            ['^vue', '^@vue'],
+            ['^element', '^@element'],
+            ['^@jshow/'],
+            ['^\\u0000', '^@?[a-zA-Z]'],
+            ['^@/'],
+            ['^\\.\\./'],
+            ['^\\./']
+          ]
+        }
+      ]
+    }
+  },
+  {
     files: ['**/*.vue'],
     plugins: { vue: pluginVue },
     languageOptions: {
@@ -57,9 +79,10 @@ const legacyConfigs: Linter.Config[] = buildCompat(
         'error',
         {
           groups: [
-            ['^node:'],
-            ['\\u0000'],
-            ['^vue', '^@?[a-zA-Z]'],
+            ['^vue', '^@vue'],
+            ['^element', '^@element'],
+            ['^@jshow/'],
+            ['^\\u0000', '^@?[a-zA-Z]'],
             ['^@/'],
             ['^\\.\\./'],
             ['^\\./']

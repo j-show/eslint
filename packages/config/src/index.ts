@@ -1,5 +1,7 @@
 import { type Linter } from 'eslint';
 
+import globals from 'globals';
+
 import browser from './browser';
 import node from './node';
 import prettier from './prettier';
@@ -7,7 +9,11 @@ import react from './react';
 import typescript from './typescript';
 import vue from './vue';
 
-/** 配置键类型，对应不同的运行时环境 */
+/**
+ * 预设导出名，与 `config` 对象上的键一一对应。
+ *
+ * 用于在类型层面约束可组合的预设键，避免拼写错误。
+ */
 type ConfigKey = 'typescript' | 'browser' | 'node' | 'react' | 'vue';
 
 /**
@@ -32,13 +38,15 @@ type ConfigKey = 'typescript' | 'browser' | 'node' | 'react' | 'vue';
  */
 const config: Record<ConfigKey, Linter.Config[]> & {
   prettier: typeof prettier;
+  globals: typeof globals;
 } = {
   typescript,
   browser,
   node,
   react,
   vue,
-  prettier
+  prettier,
+  globals
 };
 
 export default config;

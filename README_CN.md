@@ -125,6 +125,18 @@
    pnpm exec eslint . --report-unused-disable-directives --max-warnings=0
    ```
 
+### Prettier 集成
+
+`eslint-config-jshow` 提供异步工厂 `prettier(cwd)`：会读取项目 Prettier 配置并追加 `eslint-config-prettier` 与 `eslint-plugin-prettier`。在 `eslint.config.js` 中于其他预设之后展开，并使用顶层 `await`（Node 将配置文件视为 ES 模块）：
+
+```js
+import jshowConfig from 'eslint-config-jshow';
+
+const prettierConfigs = await jshowConfig.prettier(process.cwd());
+
+export default [...jshowConfig.node, ...prettierConfigs];
+```
+
 ## 配置示例
 
 ### TypeScript 项目

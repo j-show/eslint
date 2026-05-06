@@ -1,6 +1,15 @@
 {
   "name": "eslint-plugin-jshow",
   "version": "1.0.13",
+  "license": "MIT",
+  "homepage": "https://github.com/j-show/eslint",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/j-show/eslint.git"
+  },
+  "bugs": {
+    "url": "https://github.com/j-show/eslint/issues"
+  },
   "description": "ESLint plugin for jshow",
   "keywords": [
     "eslint",
@@ -25,21 +34,17 @@
     "test": "vitest"
   },
   "peerDependencies": {
-    "eslint": "^9",
-    "typescript-eslint": "^8"
+    "eslint": "catalog:",
+    "typescript-eslint": "catalog:"
   },
   "dependencies": {
-    "eslint": "^9",
-    "@typescript-eslint/eslint-plugin": "^8",
-    "@typescript-eslint/parser": "^8",
-    "@typescript-eslint/types": "^8",
-    "@typescript-eslint/utils": "^8"
+    "eslint": "catalog:",
+    "typescript-eslint": "catalog:"
   },
   "devDependencies": {
-    "@types/common-tags": "^1.8.2",
-    "@types/node": "*",
-    "@vitest/coverage-v8": "4.0.14",
-    "common-tags": "^1.8.2",
-    "lodash-es": "^4.17.21"
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "@typescript-eslint/types": "catalog:",
+    "@typescript-eslint/utils": "catalog:"
   }
 }

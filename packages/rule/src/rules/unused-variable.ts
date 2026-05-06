@@ -1,3 +1,10 @@
+/**
+ * `unused-variable` 规则：基于 ESLint Scope 统计引用次数，删除未被使用的变量声明。
+ *
+ * 对「整段声明均可删」与「仅删部分 declarator」分支拆分处理，以降低破坏合法语法的概率。
+ *
+ * @module unused-variable
+ */
 import { AST_NODE_TYPES, AST_TOKEN_TYPES } from '@typescript-eslint/types';
 import {
   ESLintUtils,
@@ -6,7 +13,6 @@ import {
   type TSESTree
 } from '@typescript-eslint/utils';
 
-import { type RuleDefinition } from './types';
 import { getContextReportIssue, isIgnoredName, stringToRegExp } from './utils';
 
 /**
@@ -31,6 +37,9 @@ export interface UnusedVariableOption {
   ignoreFunction?: boolean;
 }
 
+/**
+ * 本规则 `context.report` 使用的消息 ID 联合类型。
+ */
 export type UnusedVariableMessageIds =
   | 'unusedSingleVariable'
   | 'unusedAllVariable';
@@ -89,6 +98,9 @@ const isPunctuatorComma = (
   return token?.type === AST_TOKEN_TYPES.Punctuator && token.value === ',';
 };
 
+/**
+ * 源码中的闭区间 `[start, end]`（字符偏移，与 ESLint `range` 一致）。
+ */
 type NumberRange = [number, number];
 
 /**
@@ -378,6 +390,6 @@ const rule = ESLintUtils.RuleCreator(
   },
   defaultOptions: [DEFAULT_OPTION],
   create
-}) as RuleDefinition;
+});
 
 export default { name, rule };

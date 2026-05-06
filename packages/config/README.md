@@ -118,6 +118,21 @@ export default [
 
 > Tip: because every preset is an array, you can spread them multiple times with different `files` globs, which is handy for monorepos.
 
+### Prettier (async helper)
+
+The package exports `eslint-config-jshow/prettier` as an **async function** that resolves `.prettierrc` (and friends) from `cwd`, then returns a `Linter.Config[]` fragment with `prettier/prettier` enabled. Use top-level `await` in `eslint.config.js`:
+
+```js
+import prettierPreset from 'eslint-config-jshow/prettier';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const cwd = dirname(fileURLToPath(import.meta.url));
+const prettierConfigs = await prettierPreset(cwd);
+
+export default [...otherPresets, ...prettierConfigs];
+```
+
 ---
 
 ## Recommended scripts

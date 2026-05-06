@@ -1,4 +1,5 @@
 import { type TSESLint, type TSESTree } from '@typescript-eslint/utils';
+
 import { type ESLint } from 'eslint';
 
 /**
@@ -20,7 +21,7 @@ export type RuleDefinition =
  * ```ts
  * const data: ReportIssueData = {
  *   name: 'MyClass',
- *   type: 'class property'
+ *   type: 'class property' // 供 meta.messages 模板使用的附加字段，非接口必填
  * };
  * ```
  */

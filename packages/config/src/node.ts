@@ -1,4 +1,5 @@
 import { type Linter } from 'eslint';
+
 import globals from 'globals';
 
 import typescriptConfigs from './typescript';
@@ -25,7 +26,7 @@ import { buildCompat } from './utils';
  */
 const legacyConfigs: Linter.Config[] = buildCompat(...typescriptConfigs, {
   languageOptions: {
-    globals: globals.node
+    globals: { ...globals.node, ...globals.nodeBuiltin }
   },
   rules: {
     //#region eslint
@@ -41,9 +42,26 @@ const legacyConfigs: Linter.Config[] = buildCompat(...typescriptConfigs, {
 
     //#region @typescript-eslint
 
-    '@typescript-eslint/no-var-requires': 'off'
+    '@typescript-eslint/no-var-requires': 'off',
 
     //#endregion
+
+    'jshow/sort-import': [
+      'error',
+      {
+        groups: [
+          ['^node:'],
+          ['^typescript-eslint$', '^@typescript-eslint/'],
+          ['^eslint$', '^@eslint/'],
+          ['^eslint-plugin', '^eslint-config'],
+          ['^@jshow/'],
+          ['^\\u0000', '^@?[a-zA-Z]'],
+          ['^@/'],
+          ['^\\.\\./'],
+          ['^\\./']
+        ]
+      }
+    ]
   }
 });
 

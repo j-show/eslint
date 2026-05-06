@@ -16,11 +16,7 @@ import {
   type TSESTree
 } from '@typescript-eslint/utils';
 
-import {
-  type ReportIssueData,
-  type ReportIssueFunc,
-  type RuleDefinition
-} from './types';
+import { type ReportIssueData, type ReportIssueFunc } from './types';
 import { getContextReportIssue, getNameFromMember } from './utils';
 
 /**
@@ -108,6 +104,9 @@ export interface ExplicitMemberAccessibilityOption {
   overrides?: Partial<OptionOverrides>;
 }
 
+/**
+ * 规则 `meta.messages` 与 `context.report` 共用的消息 ID 联合类型。
+ */
 export type ExplicitMemberAccessibilityMessageIds =
   | 'unwantedPublicAccessibility'
   | 'missingAccessibility';
@@ -348,25 +347,15 @@ const parseOverrideAccessibility = (
 };
 
 /**
- * Method/Accessor/Constructor 的主入口，负责：
- * 1. 根据 kind 选择对等的 override
- * 2. 运行静态修饰符检查
- * 3. 委托给通用检查逻辑
- */
-/**
- * 检查并报告方法（MethodDefinition/TSAbstractMethodDefinition）上的显式可访问性修饰符。
+ * 检查并报告方法（MethodDefinition / TSAbstractMethodDefinition）上的显式可访问性修饰符。
  *
- * 该函数做了如下几件事情：
- * 1. 首先根据 node.kind（constructor/get/set/method）判断当前节点类型，
- *    并从 option 里取出对应的配置（accessibility、ignoredNames、fixWith）。
- *    若某种类型被设置为 'off'，则直接跳过后续检查。
- * 2. 利用 getNameFromMember 获取成员具体名称，便于后续报告可读性。
- * 3. 构造 data 对象作为报告时的上下文，包含 type & name 信息。
- * 4. 先行检查 static 修饰符要求（如 staticAccessibility 是 explicit 时），
- *    若 static 设置不符直接返回，无需再检查访问级别。
- * 5. 如果本成员类型的可访问性设置为 'off' 或节点为私有 class 字段（#foo），直接退出。
- * 6. 调用通用的 checkAccessibilityModifier，检查并报告是否缺少 public/private/protected，
- *    若缺失则可由 fixer 自动修复。
+ * 作为 Method / Accessor / Constructor 的统一入口：先按 `kind` 选择 override，再处理 `staticAccessibility`，最后委托通用检查。
+ * 分步执行是为了让静态成员策略与实例成员策略解耦，避免一套逻辑里堆叠过多分支。
+ *
+ * @param code - 源码对象，供 fixer 定位 token
+ * @param node - 方法或抽象方法节点
+ * @param option - 已合并的静态/分类型策略
+ * @param reportIssue - 统一封装后的上报函数
  */
 const checkMethodAccessibilityModifier = (
   code: TSESLint.SourceCode,
@@ -512,9 +501,9 @@ const checkParameterPropertyAccessibilityModifier = (
     parameter.type === AST_NODE_TYPES.Identifier
       ? parameter
       : parameter.type === AST_NODE_TYPES.AssignmentPattern &&
-        parameter.left.type === AST_NODE_TYPES.Identifier
-      ? parameter.left
-      : null;
+          parameter.left.type === AST_NODE_TYPES.Identifier
+        ? parameter.left
+        : null;
 
   if (!identifier) return;
 
@@ -703,6 +692,6 @@ const rule = ESLintUtils.RuleCreator(
   },
   defaultOptions: [DEFAULT_OPTION],
   create
-}) as RuleDefinition;
+});
 
 export default { name, rule };

@@ -1,6 +1,15 @@
 {
   "name": "eslint-config-jshow",
   "version": "1.0.13",
+  "license": "MIT",
+  "homepage": "https://github.com/j-show/eslint",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/j-show/eslint.git"
+  },
+  "bugs": {
+    "url": "https://github.com/j-show/eslint/issues"
+  },
   "description": "ESLint config for jshow",
   "keywords": [
     "eslint",
@@ -10,6 +19,7 @@
   ],
   "files": [
     "dist",
+    "tsconfig.base.json",
     "README.md",
     "README_CN.md"
   ],
@@ -19,6 +29,7 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
+    "./tsconfig.base.json": "./tsconfig.base.json",
     "./typescript": {
       "types": "./dist/typescript.d.ts",
       "import": "./dist/typescript.mjs",
@@ -54,27 +65,27 @@
     "build": "vite build"
   },
   "peerDependencies": {
-    "eslint": "^9",
-    "typescript-eslint": "^8",
-    "prettier": ">=3"
+    "eslint": "catalog:",
+    "typescript-eslint": "catalog:",
+    "prettier": "catalog:"
   },
   "dependencies": {
-    "@eslint/js": "^9",
-    "@typescript-eslint/eslint-plugin": "^8",
-    "@typescript-eslint/parser": "^8",
-    "eslint": "^9",
+    "typescript-eslint": "catalog:",
+    "eslint": "catalog:",
     "eslint-plugin-jshow": "workspace:*",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-vue": "^10.6.2",
-    "prettier": ">=3",
-    "eslint-config-prettier": "latest",
-    "eslint-plugin-prettier": "latest",
-    "globals": "^16.5.0",
-    "typescript-eslint": "^8",
-    "vue-eslint-parser": "^10.2.0"
+    "eslint-plugin-react": "catalog:",
+    "eslint-plugin-react-hooks": "catalog:",
+    "eslint-plugin-vue": "catalog:",
+    "prettier": "catalog:",
+    "eslint-config-prettier": "catalog:",
+    "eslint-plugin-prettier": "catalog:",
+    "globals": "^17",
+    "vue-eslint-parser": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "*"
+    "@types/node": "^22",
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "@eslint/js": "catalog:"
   }
 }
