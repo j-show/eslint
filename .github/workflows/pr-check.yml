@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'pnpm'
 
       - name: Debug PR info
@@ -31,8 +31,7 @@ jobs:
 
       - name: Install Dependencies & Build
         run: |
-          rm -rf ./.npmrc
-          pnpm install
+          pnpm install --no-frozen-lockfile
           pnpm run build
 
       - name: Test rule
@@ -42,12 +41,10 @@ jobs:
         if: github.event.pull_request.base.ref == 'master'
         run: |
           cd examples/react
-          pnpm install
           pnpm run test
 
       - name: Test vue
         if: github.event.pull_request.base.ref == 'master'
         run: |
           cd examples/vue
-          pnpm install
           pnpm run test

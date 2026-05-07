@@ -125,6 +125,18 @@ Detects and removes unused variable declarations, including destructured binding
    pnpm exec eslint . --report-unused-disable-directives --max-warnings=0
    ```
 
+### Prettier integration
+
+`eslint-config-jshow` exposes an async `prettier(cwd)` helper that resolves your Prettier config and appends `eslint-config-prettier` plus `eslint-plugin-prettier`. Spread it after your lint presets and use a top-level `await` (Node.js loads `eslint.config.js` as an ES module):
+
+```js
+import jshowConfig from 'eslint-config-jshow';
+
+const prettierConfigs = await jshowConfig.prettier(process.cwd());
+
+export default [...jshowConfig.node, ...prettierConfigs];
+```
+
 ## Configuration Examples
 
 ### TypeScript Project

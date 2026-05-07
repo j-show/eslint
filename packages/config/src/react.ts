@@ -1,10 +1,16 @@
 import type { ESLint, Linter } from 'eslint';
+
 import pluginReact from 'eslint-plugin-react';
 import pluginReactHooks from 'eslint-plugin-react-hooks';
 
 import browserConfigs from './browser';
 import { buildCompat } from './utils';
 
+/**
+ * `eslint-plugin-react` 的 flat 预设映射表。
+ *
+ * 以 `Record` 形式取出 `recommended`、`jsx-runtime` 等具名片段，便于与 `buildCompat` 顺序拼接。
+ */
 const reactConfigs = pluginReact.configs.flat as unknown as Record<
   string,
   Linter.Config
@@ -57,9 +63,9 @@ const legacyConfigs: Linter.Config[] = buildCompat(
         'error',
         {
           groups: [
-            ['^node:'],
-            ['\\u0000'],
-            ['^react', '^@?[a-zA-Z]'],
+            ['^react', '^styled-components'],
+            ['^@jshow/'],
+            ['^\\u0000', '^@?[a-zA-Z]'],
             ['^@/'],
             ['^\\.\\./'],
             ['^\\./']

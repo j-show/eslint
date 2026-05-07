@@ -6,7 +6,7 @@ import {
   type TSESTree
 } from '@typescript-eslint/utils';
 
-import { type ReportIssueFunc, type RuleDefinition } from './types';
+import { type ReportIssueFunc } from './types';
 import { getContextReportIssue } from './utils';
 
 /**
@@ -14,7 +14,7 @@ import { getContextReportIssue } from './utils';
  *
  * @property autoFix - 是否自动修复，true 直接重排 import，false 仅提示
  * @property order - 组内排序方向，'asc' 默认按字典序 A→Z，'desc' 则反向
- * @property groups - 二维正则字符串数组，按来源划分层级，例如第三方/别名/相对路径
+ * @property groups - 二维正则字符串数组，按来源划分层级；同一子数组内多个正则按从左到右为子优先级，先于组内字典序
  * @property clusters - 与 groups 等长的数字数组，决定组内行间距（0=紧凑，1=每行后空一行，2=每行前后各空一行）
  *
  * @example
@@ -40,18 +40,26 @@ export interface SortImportOption {
   clusters?: number[];
 }
 
+/**
+ * 本规则 `context.report` 使用的消息 ID 联合类型。
+ *
+ * 与 `meta.messages` 键保持一致，便于 `ReportIssueFunc` 泛型约束。
+ */
 export type SortImportMessageIds = 'importsNotSorted';
 
 type ReportIssue = ReportIssueFunc<SortImportMessageIds>;
 
-/** 内部复用的排序方向枚举，仅保留有效取值。 */
+/**
+ * 组内字典序方向，仅 `asc` / `desc` 两种合法取值。
+ */
 type SortOrder = 'asc' | 'desc';
 
 /**
- * 归一化后的配置：
- * - groups 被预编译为正则，避免在遍历时频繁 new RegExp。
- * - clusters 会被填补为等长数组，保证每个分组都有对应 spacing 策略。
- * - lineBreak 会从源码推断，确保 fixer 保持原始换行风格。
+ * 归一化后的运行时配置。
+ *
+ * - 预编译 `groups`：避免在热路径上反复 `new RegExp`。
+ * - 补齐 `clusters`：与分组长度对齐，简化间距计算分支。
+ * - 推断 `lineBreak`：与文件实际 CRLF/LF 一致，避免 autofix 引入混合换行。
  */
 interface NormalizedOption {
   autoFix: boolean;
@@ -64,15 +72,23 @@ interface NormalizedOption {
 /**
  * ImportEntry 记录导入语句在排序时需要的全部信息，包括：
  * - key：排序依据（来源 + 是否具名导入）
- * - groupIndex/clusterIndex：匹配到的分组信息及组内换行策略
+ * - groupIndex/patternIndex：所属分组及组内第几个子正则命中（同组多正则时决定先后）
+ * - clusterIndex：组内换行策略
  * - hasLeadingComment：带行注释的导入保持原位，避免破坏语义说明
+ */
+/**
+ * 单条 import 在排序流水线中的中间表示。
+ *
+ * 缓存 `text`/`start` 等字段，便于在合并同模块 import 后仍能整体替换原文区间。
  */
 interface ImportEntry {
   node: TSESTree.ImportDeclaration;
   text: string;
   key: string;
   groupIndex: number;
-  // visual spacing mode inside the group (0/1/2)
+  /** 同一组内多个 pattern 时，按配置数组下标先后排序 */
+  patternIndex: number;
+  /** 组内视觉间距模式（0/1/2），对应 `clusters` 配置 */
   clusterIndex: number;
   originalIndex: number;
   start: number;
@@ -219,22 +235,33 @@ const getSortKey = (node: TSESTree.ImportDeclaration) => {
 };
 
 /**
- * 根据排序 key 匹配所属分组；若都未命中则放到最后一组。
+ * `getGroupMatch` 的返回值：描述某个 import 命中的分组及组内子正则下标。
+ */
+interface GroupMatch {
+  groupIndex: number;
+  patternIndex: number;
+}
+
+/**
+ * 根据排序 key 匹配所属分组及组内子 pattern 下标；若都未命中则放到最后一组。
+ * 同组配置多个正则时，以「最先命中的子正则」的下标参与排序，从而严格遵循配置中的 pattern 顺序。
  * @param key 排序依据
  * @param groups 预编译的分组正则
  */
-const getGroupIndex = (key: string, groups: RegExp[][]) => {
-  for (let index = 0; index < groups.length; index++) {
-    const group = groups[index];
+const getGroupMatch = (key: string, groups: RegExp[][]): GroupMatch => {
+  for (let gi = 0; gi < groups.length; gi++) {
+    const group = groups[gi];
     if (group.length < 1) continue;
 
-    // 命中任意一个正则即认定为该组
-    if (group.some(regex => regex.test(key))) {
-      return index;
+    for (let pi = 0; pi < group.length; pi++) {
+      const regex = group[pi];
+      if (regex.test(key)) {
+        return { groupIndex: gi, patternIndex: pi };
+      }
     }
   }
 
-  return groups.length;
+  return { groupIndex: groups.length, patternIndex: 0 };
 };
 
 /**
@@ -247,12 +274,16 @@ const getClusterValue = (groupIndex: number, clusters: number[]) =>
   clusters[groupIndex] ?? 0;
 
 /**
- * 对两个 import 进行比较：优先按分组排序，其次按 key，最后按原始顺序。
+ * 对两个 import 进行比较：分组 → 组内子 pattern 顺序 → key 字典序 → 原始顺序。
  */
 const compareEntries = (a: ImportEntry, b: ImportEntry, order: SortOrder) => {
   if (a.groupIndex !== b.groupIndex) {
     // 不同组直接按分组索引快排
     return a.groupIndex - b.groupIndex;
+  }
+
+  if (a.patternIndex !== b.patternIndex) {
+    return a.patternIndex - b.patternIndex;
   }
 
   if (a.key === b.key) {
@@ -298,7 +329,7 @@ const collectEntries = (
     const text = `${prefixText}${sourceCode.getText(node)}`;
 
     const key = getSortKey(node);
-    const groupIndex = getGroupIndex(key, options.groups);
+    const { groupIndex, patternIndex } = getGroupMatch(key, options.groups);
     const clusterIndex = getClusterValue(groupIndex, options.clusters);
     const hasLeadingComment =
       attachedComments.some(comment => comment.type === 'Line') ||
@@ -309,6 +340,7 @@ const collectEntries = (
       text,
       key,
       groupIndex,
+      patternIndex,
       clusterIndex,
       originalIndex: index,
       start,
@@ -462,13 +494,9 @@ const shouldUseTypePrefix = (
 ): boolean => {
   // 判断是否所有导入都是类型
   let allDefaultAreType = true;
-  let defaultIsType = false;
 
   if (uniqueDefaultSpecifiers.size > 0) {
     for (const item of uniqueDefaultSpecifiers.values()) {
-      if (defaultIsType === false) {
-        defaultIsType = item.isType;
-      }
       if (!item.isType) {
         allDefaultAreType = false;
         break;
@@ -490,8 +518,8 @@ const shouldUseTypePrefix = (
     (uniqueDefaultSpecifiers.size === 0 || allDefaultAreType) &&
     (uniqueNamedSpecifiers.size === 0 || allNamedAreType);
 
-  // 如果默认导入是类型，即使有值导入的具名导入，也使用 import type
-  return isAllType || (defaultIsType && uniqueDefaultSpecifiers.size > 0);
+  // 仅当默认与具名均为类型时才用 `import type`；否则不能写成 `import type D, { v }`（TS 非法）
+  return isAllType;
 };
 
 /**
@@ -678,6 +706,7 @@ const mergeEntriesBySource = (
       text: mergedText,
       key: firstEntry.key,
       groupIndex: firstEntry.groupIndex,
+      patternIndex: firstEntry.patternIndex,
       clusterIndex: firstEntry.clusterIndex,
       originalIndex: firstEntry.originalIndex,
       start: mergedStart,
@@ -898,6 +927,6 @@ const rule = ESLintUtils.RuleCreator(
   },
   defaultOptions: [DEFAULT_OPTION],
   create
-}) as RuleDefinition;
+});
 
 export default { name, rule };

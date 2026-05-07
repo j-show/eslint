@@ -99,10 +99,11 @@ export const isIgnoredName = (
 
 /**
  * 成员名的分类，方便在报错时决定最终展示形式。
- * - Private：私有字段（形如 #foo），直接带上 # 前缀
- * - Quoted：字面量中包含特殊字符，使用引号包裹
- * - Normal：普通标识符/字面量，可直接输出
- * - Expression：计算属性，保留表达式原文
+ *
+ * - `Private`：私有字段（形如 `#foo`），直接带上 `#` 前缀
+ * - `Quoted`：字面量中包含特殊字符，使用引号包裹
+ * - `Normal`：普通标识符/字面量，可直接输出
+ * - `Expression`：计算属性，保留表达式原文
  */
 enum MemberNameType {
   Private = 1,

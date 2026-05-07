@@ -113,6 +113,21 @@ export default [
 
 > 提示：每个预设都是数组，可以多次展开并搭配不同的 `files` 进行作用域划分，非常适合大型仓库。
 
+### Prettier（异步工厂）
+
+`eslint-config-jshow/prettier` 导出为**异步函数**：在给定 `cwd` 下解析 `.prettierrc` 等配置后，返回包含 `prettier/prettier` 的 `Linter.Config[]`。在 `eslint.config.js` 中使用顶层 `await`：
+
+```js
+import prettierPreset from 'eslint-config-jshow/prettier';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const cwd = dirname(fileURLToPath(import.meta.url));
+const prettierConfigs = await prettierPreset(cwd);
+
+export default [...otherPresets, ...prettierConfigs];
+```
+
 ---
 
 ## 推荐脚本

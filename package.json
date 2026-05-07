@@ -31,33 +31,39 @@
     "preview:vue": "cd examples/vue && pnpm preview"
   },
   "devDependencies": {
-    "@types/fs-extra": "^11.0.4",
-    "chalk": "^4.1.0",
-    "eslint": "^9",
+    "@types/node": "^22",
+    "@types/common-tags": "^1",
+    "eslint": "catalog:",
     "eslint-config-jshow": "workspace:*",
-    "eslint-config-prettier": "latest",
+    "eslint-config-prettier": "catalog:",
     "eslint-plugin-jshow": "workspace:*",
-    "eslint-plugin-prettier": "latest",
-    "eslint-plugin-react": "latest",
-    "eslint-plugin-react-hooks": "latest",
-    "eslint-plugin-vue": "latest",
-    "execa": "^4.0.2",
-    "fs-extra": "^11.2.0",
+    "eslint-plugin-prettier": "catalog:",
+    "eslint-plugin-react": "catalog:",
+    "eslint-plugin-react-hooks": "catalog:",
+    "eslint-plugin-vue": "catalog:",
     "husky": "latest",
     "lint-staged": "latest",
-    "prettier": ">=3",
+    "prettier": "catalog:",
     "semver": "^7.7.3",
-    "typescript": "^5",
-    "vite": "^7",
-    "vite-plugin-dts": "^4.5.4",
-    "vitest": "^4"
+    "typescript": "catalog:",
+    "vite": "^8",
+    "vite-plugin-dts": "^5",
+    "vitest": "^4",
+    "common-tags": "^1",
+    "lodash-es": "^4.17.21"
   },
   "pnpm": {
     "overrides": {
-      "@types/node": "^20.11.5",
-      "typescript-eslint": "^8",
-      "eslint": "^9",
-      "eslint-plugin-jshow": "workspace:*"
+      "typescript": "catalog:",
+      "typescript-eslint": "catalog:",
+      "eslint": "catalog:",
+      "eslint-config-jshow": "workspace:*",
+      "eslint-config-prettier": "catalog:",
+      "eslint-plugin-jshow": "workspace:*",
+      "eslint-plugin-prettier": "catalog:",
+      "eslint-plugin-react": "catalog:",
+      "eslint-plugin-react-hooks": "catalog:",
+      "eslint-plugin-vue": "catalog:"
     }
   }
 }

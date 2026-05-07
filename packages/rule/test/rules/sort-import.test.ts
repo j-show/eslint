@@ -140,7 +140,7 @@ testRun(sortImport.name, sortImport.rule, {
     },
     {
       code: format`
-        import type DefaultType, { ValueA } from 'module';
+        import DefaultType, { ValueA } from 'module';
       `
     }
   ],
@@ -425,7 +425,7 @@ testRun(sortImport.name, sortImport.rule, {
         import { ValueA } from 'module';
       `,
       output: format`
-        import type DefaultType, { ValueA } from 'module';
+        import DefaultType, { ValueA } from 'module';
       `,
       errors: [{ messageId: 'importsNotSorted' }]
     },
@@ -479,6 +479,90 @@ testRun(sortImport.name, sortImport.rule, {
       output: format`
         import { type TypeA, type TypeB, ValueA } from 'module';
       `,
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
+    {
+      code: format`
+        import { type Linter } from 'eslint';
+
+        import eslintConfigPrettier from 'eslint-config-prettier/flat';
+        import eslintPluginPrettier from 'eslint-plugin-prettier';
+
+        import prettier from 'prettier';
+
+        import { buildCompat } from './utils';
+      `,
+      output: format`
+        import { type Linter } from 'eslint';
+
+        import eslintPluginPrettier from 'eslint-plugin-prettier';
+        import eslintConfigPrettier from 'eslint-config-prettier/flat';
+
+        import prettier from 'prettier';
+
+        import { buildCompat } from './utils';
+      `,
+      options: [
+        {
+          groups: [
+            ['^node:'],
+            ['^eslint$', '^@eslint/'],
+            ['^typescript-eslint', '^@typescript-eslint/'],
+            ['^eslint\\-plugin', '^eslint\\-config'],
+            ['^@jshow/'],
+            ['^\\u0000', '^@?[a-zA-Z]'],
+            ['^@/'],
+            ['^\\.\\./'],
+            ['^\\./']
+          ]
+        }
+      ],
+      errors: [{ messageId: 'importsNotSorted' }]
+    },
+    {
+      code: format`
+        import pluginEslint from '@typescript-eslint/eslint-plugin';
+        import typescriptParser from '@typescript-eslint/parser';
+        import typescriptEslint from 'typescript-eslint';
+
+        import eslintJs from '@eslint/js';
+        import type { ESLint, Linter } from 'eslint';
+
+        import pluginJshow from 'eslint-plugin-jshow';
+
+        import globals from 'globals';
+
+        import { buildCompat } from './utils';
+      `,
+      output: format`
+        import typescriptEslint from 'typescript-eslint';
+        import pluginEslint from '@typescript-eslint/eslint-plugin';
+        import typescriptParser from '@typescript-eslint/parser';
+
+        import type { ESLint, Linter } from 'eslint';
+        import eslintJs from '@eslint/js';
+
+        import pluginJshow from 'eslint-plugin-jshow';
+
+        import globals from 'globals';
+
+        import { buildCompat } from './utils';
+      `,
+      options: [
+        {
+          groups: [
+            ['^node:'],
+            ['^typescript-eslint$', '^@typescript-eslint/'],
+            ['^eslint$', '^@eslint/'],
+            ['^eslint-plugin', '^eslint-config'],
+            ['^@jshow/'],
+            ['^\\u0000', '^@?[a-zA-Z]'],
+            ['^@/'],
+            ['^\\.\\./'],
+            ['^\\./']
+          ]
+        }
+      ],
       errors: [{ messageId: 'importsNotSorted' }]
     }
   ]

@@ -1,7 +1,9 @@
 import parser from '@typescript-eslint/parser';
 import { type TSESLint } from '@typescript-eslint/utils';
-import { stripIndent } from 'common-tags';
+
 import { RuleTester } from 'eslint';
+
+import { stripIndent } from 'common-tags';
 import { flattenDeep } from 'lodash-es';
 
 export const createRuleTester = () => {

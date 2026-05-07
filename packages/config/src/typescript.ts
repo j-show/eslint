@@ -1,10 +1,13 @@
-import eslintJs from '@eslint/js';
+import typescriptEslint from 'typescript-eslint';
 import pluginEslint from '@typescript-eslint/eslint-plugin';
 import typescriptParser from '@typescript-eslint/parser';
+
 import type { ESLint, Linter } from 'eslint';
+import eslintJs from '@eslint/js';
+
 import pluginJshow from 'eslint-plugin-jshow';
+
 import globals from 'globals';
-import typescriptEslint from 'typescript-eslint';
 
 import { buildCompat } from './utils';
 
@@ -28,7 +31,6 @@ import { buildCompat } from './utils';
  * export default [...typescriptConfig];
  * ```
  */
-
 const legacyConfigs: Linter.Config[] = buildCompat(
   eslintJs.configs.recommended,
   typescriptEslint.configs.recommended,
@@ -106,7 +108,7 @@ const legacyConfigs: Linter.Config[] = buildCompat(
       'no-useless-escape': 'warn',
       'no-use-before-define': 'error',
       'no-var': 'error',
-      'no-void': ['error', { allowAsStatement: true }],
+      'no-void': 'off',
 
       'no-restricted-syntax': [
         'error',
@@ -278,6 +280,32 @@ const legacyConfigs: Linter.Config[] = buildCompat(
     rules: {
       'no-restricted-globals': 'off',
       '@typescript-eslint/no-var-requires': 'off'
+    }
+  },
+  {
+    files: [
+      'eslint.config.js',
+      'eslint.config.ts',
+      'vite.config.ts',
+      'vitest.config.ts'
+    ],
+    rules: {
+      'jshow/sort-import': [
+        'error',
+        {
+          groups: [
+            ['^node:'],
+            ['^typescript-eslint$', '^@typescript-eslint/'],
+            ['^eslint$', '^@eslint/'],
+            ['^eslint-plugin', '^eslint-config'],
+            ['^@jshow/'],
+            ['^\\u0000', '^@?[a-zA-Z]'],
+            ['^@/'],
+            ['^\\.\\./'],
+            ['^\\./']
+          ]
+        }
+      ]
     }
   }
 );
