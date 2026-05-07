@@ -1,15 +1,6 @@
 {
   "name": "eslint-plugin-jshow",
   "version": "1.0.13",
-  "license": "MIT",
-  "homepage": "https://github.com/j-show/eslint",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/j-show/eslint.git"
-  },
-  "bugs": {
-    "url": "https://github.com/j-show/eslint/issues"
-  },
   "description": "ESLint plugin for jshow",
   "keywords": [
     "eslint",
