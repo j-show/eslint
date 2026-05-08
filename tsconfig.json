@@ -1,8 +1,5 @@
 {
   "extends": "eslint-config-jshow/tsconfig.base.json",
-  "compilerOptions": {
-    "sourceMap": true
-  },
   "include": [
     "src",
     "./global.d.ts"

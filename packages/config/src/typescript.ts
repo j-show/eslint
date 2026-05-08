@@ -76,7 +76,7 @@ const legacyConfigs: Linter.Config[] = buildCompat(
       'no-floating-decimal': 'error',
       'no-implicit-coercion': 'off',
       'no-implied-eval': 'error',
-      'no-inline-comments': 'error',
+      'no-inline-comments': 'off',
       'no-invalid-this': 'error',
       'no-iterator': 'error',
       'no-label-var': 'error',

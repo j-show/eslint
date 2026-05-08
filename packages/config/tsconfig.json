@@ -16,8 +16,6 @@
     "typeRoots": [
       "node_modules/@types",
       "node_modules/@typescript-eslint/types"
-    ],
-    "declaration": true,
-    "sourceMap": false
+    ]
   }
 }
